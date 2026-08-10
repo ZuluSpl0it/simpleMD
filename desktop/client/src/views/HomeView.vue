@@ -4,6 +4,7 @@
     <p v-if="workspace">Workspace: {{ workspace }}</p>
     <p v-else>No workspace selected.</p>
     <button type="button" @click="$emit('select-workspace')">Select workspace</button>
+    <button type="button" @click="$emit('open-markdown')">Open Markdown</button>
     <form @submit.prevent="submitSearch">
       <input v-model="term" placeholder="Search notes" />
       <button type="submit">Search</button>

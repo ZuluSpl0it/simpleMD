@@ -14,7 +14,7 @@ Create a Windows 10/11 x64 portable desktop edition of Flatnotes. It runs withou
 - Session-only tabs for workspace and external Markdown files.
 - Native folder/file dialogs and Markdown drag-and-drop opening.
 - File-change detection with explicit conflict resolution.
-- No login, authentication, REST API, localhost listener, installer, registry settings, or AppData requirement.
+- No login, authentication, externally accessible HTTP API, installer, registry settings, or AppData requirement.
 
 ## Distribution and storage
 
@@ -41,7 +41,7 @@ Flatnotes.exe
     └── native-action and conflict dialogs
 ```
 
-Vue calls Python through a pywebview asynchronous bridge. The desktop edition does not retain FastAPI, its HTTP API, server routing, authentication, cookies, or network listener. It may reuse the existing project's TOAST UI integration, styling, and selected presentation components, but the desktop state model is new.
+Vue calls Python through a pywebview asynchronous bridge. pywebview's internal static-file host binds only to loopback and serves the bundled Vue assets; it exposes no LAN-accessible application API. The desktop edition does not retain FastAPI, its HTTP API, server routing, authentication, or cookies. It may reuse the existing project's TOAST UI integration, styling, and selected presentation components, but the desktop state model is new.
 
 ## Files and safety
 

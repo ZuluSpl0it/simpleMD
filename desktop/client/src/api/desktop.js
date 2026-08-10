@@ -10,3 +10,5 @@ export const openMarkdown = () => api().open_markdown();
 export const selectWorkspace = () => api().select_workspace();
 export const saveTab = (tab) => api().save_tab(tab);
 export const saveAs = (tab) => api().save_as(tab);
+export const checkFile = (tab) => api().check_file(tab);
+export const openDroppedPath = (path) => api().open_dropped_path(path);

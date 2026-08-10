@@ -15,6 +15,8 @@ export function createTabs() {
       savedContent: document.content || "",
       dirty: false,
       fingerprint: document.content_hash || null,
+      modified_ns: document.modified_ns || 0,
+      content_hash: document.content_hash || null,
     });
     activeId.value = id;
     return id;

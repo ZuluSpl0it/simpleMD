@@ -1,0 +1,10 @@
+function api() {
+  if (!globalThis.pywebview?.api) {
+    throw new Error("Flatnotes desktop bridge is not ready.");
+  }
+  return globalThis.pywebview.api;
+}
+
+export const searchWorkspace = (term) => api().search_workspace(term);
+export const openMarkdown = () => api().open_markdown();
+export const selectWorkspace = () => api().select_workspace();

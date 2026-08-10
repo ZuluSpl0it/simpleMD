@@ -1,0 +1,15 @@
+from pathlib import Path
+
+from PyInstaller.utils.hooks import collect_submodules
+
+root = Path(SPEC).parent
+client_dist = root / "client" / "dist"
+
+a = Analysis(
+    [str(root / "src" / "flatnotes_desktop" / "app.py")],
+    pathex=[str(root / "src")],
+    datas=[(str(client_dist), "flatnotes_desktop/assets")],
+    hiddenimports=collect_submodules("flatnotes_desktop"),
+)
+pyz = PYZ(a.pure)
+exe = EXE(pyz, a.scripts, a.binaries, a.datas, name="Flatnotes", console=False)

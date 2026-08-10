@@ -219,6 +219,8 @@ out
 .nuxt
 dist
 
+!desktop/flatnotes_desktop.spec
+
 # Gatsby files
 .cache/
 

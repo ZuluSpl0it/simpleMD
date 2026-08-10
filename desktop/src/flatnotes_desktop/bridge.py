@@ -3,6 +3,7 @@ from pathlib import Path
 from .files import FileService
 from .settings import SettingsStore
 from .workspace import WorkspaceService
+from .watcher import Fingerprint, changed_since
 
 
 class DesktopBridge:
@@ -69,6 +70,13 @@ class DesktopBridge:
         if self.workspace is None:
             return []
         return [{"title": result.title, "path": str(result.path)} for result in self.workspace.search(term)]
+
+    def check_file(self, tab: dict) -> dict:
+        path = Path(tab["path"])
+        if not path.exists():
+            return {"state": "missing", "path": str(path)}
+        baseline = Fingerprint(tab["modified_ns"], tab["content_hash"])
+        return {"state": "changed" if changed_since(path, baseline) else "clean", "path": str(path)}
 
     @staticmethod
     def _document_payload(document) -> dict:

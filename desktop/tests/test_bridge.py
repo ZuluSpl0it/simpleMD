@@ -75,3 +75,16 @@ def test_search_workspace_returns_relative_result(tmp_path: Path):
     bridge = DesktopBridge(FakeWindow(None), FileService(), workspace=service)
 
     assert bridge.search_workspace("release")[0]["title"] == "plan"
+
+
+def test_check_file_reports_external_change(tmp_path: Path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+
+    path = tmp_path / "note.md"
+    path.write_text("one", encoding="utf-8")
+    document = FileService().open_external(path)
+    path.write_text("two", encoding="utf-8")
+    bridge = DesktopBridge(FakeWindow(None), FileService())
+
+    assert bridge.check_file({"path": str(path), "modified_ns": document.modified_ns, "content_hash": document.content_hash})["state"] == "changed"

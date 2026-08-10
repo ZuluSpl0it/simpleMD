@@ -8,3 +8,5 @@ function api() {
 export const searchWorkspace = (term) => api().search_workspace(term);
 export const openMarkdown = () => api().open_markdown();
 export const selectWorkspace = () => api().select_workspace();
+export const saveTab = (tab) => api().save_tab(tab);
+export const saveAs = (tab) => api().save_as(tab);

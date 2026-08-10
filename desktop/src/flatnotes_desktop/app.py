@@ -1,7 +1,9 @@
+import json
 from pathlib import Path
 import sys
 
 import webview
+from webview.dom import DOMEventHandler
 
 from .bridge import DesktopBridge
 from .files import FileService
@@ -24,6 +26,22 @@ def run() -> None:
         js_api=bridge,
     )
     bridge.window = window
+
+    def on_drop(event):
+        files = event.get("domTransfer", {}).get("files", [])
+        if not files:
+            return
+        path = files[0].get("pywebviewFullPath")
+        if path:
+            payload = bridge.open_dropped_path(path)
+            window.evaluate_js(
+                "window.dispatchEvent(new CustomEvent('flatnotes-drop', "
+                f"{{detail: {json.dumps(payload)}}}))"
+            )
+
+    window.dom.document.events.drop += DOMEventHandler(
+        on_drop, prevent_default=True, stop_propagation=True
+    )
     webview.start()
 
 

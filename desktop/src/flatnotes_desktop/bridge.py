@@ -26,6 +26,23 @@ class DesktopBridge:
             return {"error": "Drop a Markdown file (.md)."}
         return self._document_payload(self.file_service.open_external(target))
 
+    def save_as(self, tab: dict) -> dict | None:
+        import webview
+
+        result = self.window.create_file_dialog(
+            webview.SAVE_DIALOG,
+            save_filename=Path(tab.get("path") or "Untitled.md").name,
+            file_types=("Markdown (*.md)",),
+        )
+        if not result:
+            return None
+        document = self.file_service.save_external(result[0], tab.get("content", ""))
+        return self._document_payload(document)
+
+    def save_tab(self, tab: dict) -> dict:
+        document = self.file_service.save_external(tab["path"], tab.get("content", ""))
+        return self._document_payload(document)
+
     @staticmethod
     def _document_payload(document) -> dict:
         return {

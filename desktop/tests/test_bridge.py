@@ -29,3 +29,16 @@ def test_drop_rejects_folder_and_non_markdown(tmp_path: Path):
     assert bridge.open_dropped_path(str(tmp_path)) == {
         "error": "Drop a Markdown file (.md)."
     }
+
+
+def test_save_as_writes_selected_markdown_path(tmp_path: Path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+
+    destination = tmp_path / "saved.md"
+    bridge = DesktopBridge(FakeWindow((str(destination),)), FileService())
+
+    result = bridge.save_as({"content": "body"})
+
+    assert destination.read_text(encoding="utf-8") == "body"
+    assert result["path"] == str(destination.resolve())

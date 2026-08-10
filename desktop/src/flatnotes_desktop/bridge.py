@@ -1,12 +1,16 @@
 from pathlib import Path
 
 from .files import FileService
+from .settings import SettingsStore
+from .workspace import WorkspaceService
 
 
 class DesktopBridge:
-    def __init__(self, window, file_service: FileService):
+    def __init__(self, window, file_service: FileService, settings=None, workspace=None):
         self.window = window
         self.file_service = file_service
+        self.settings = settings
+        self.workspace = workspace
 
     def open_markdown(self) -> dict | None:
         import webview
@@ -42,6 +46,29 @@ class DesktopBridge:
     def save_tab(self, tab: dict) -> dict:
         document = self.file_service.save_external(tab["path"], tab.get("content", ""))
         return self._document_payload(document)
+
+    def select_workspace(self) -> dict | None:
+        import webview
+
+        result = self.window.create_file_dialog(webview.FOLDER_DIALOG)
+        if not result:
+            return None
+        root = Path(result[0]).resolve()
+        if not root.is_dir():
+            raise ValueError("Select a workspace folder.")
+        if self.settings is not None:
+            self.settings.save_workspace(str(root))
+            index_dir = self.settings.data_directory / "index"
+        else:
+            index_dir = root / ".flatnotes"
+        self.workspace = WorkspaceService(root, index_dir)
+        self.workspace.rebuild()
+        return {"workspace": str(root)}
+
+    def search_workspace(self, term: str) -> list[dict]:
+        if self.workspace is None:
+            return []
+        return [{"title": result.title, "path": str(result.path)} for result in self.workspace.search(term)]
 
     @staticmethod
     def _document_payload(document) -> dict:

@@ -42,3 +42,36 @@ def test_save_as_writes_selected_markdown_path(tmp_path: Path):
 
     assert destination.read_text(encoding="utf-8") == "body"
     assert result["path"] == str(destination.resolve())
+
+
+def test_select_workspace_persists_folder(tmp_path: Path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.settings import SettingsStore
+    from flatnotes_desktop.files import FileService
+
+    workspace = tmp_path / "notes"
+    workspace.mkdir()
+    bridge = DesktopBridge(
+        FakeWindow((str(workspace),)),
+        FileService(),
+        settings=SettingsStore(tmp_path / "data"),
+    )
+
+    result = bridge.select_workspace()
+
+    assert result["workspace"] == str(workspace.resolve())
+
+
+def test_search_workspace_returns_relative_result(tmp_path: Path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+    from flatnotes_desktop.workspace import WorkspaceService
+
+    workspace = tmp_path / "notes"
+    workspace.mkdir()
+    (workspace / "plan.md").write_text("release", encoding="utf-8")
+    service = WorkspaceService(workspace, tmp_path / "index")
+    service.rebuild()
+    bridge = DesktopBridge(FakeWindow(None), FileService(), workspace=service)
+
+    assert bridge.search_workspace("release")[0]["title"] == "plan"

@@ -43,7 +43,21 @@ def run() -> None:
     window.dom.document.events.drop += DOMEventHandler(
         on_drop, prevent_default=True, stop_propagation=True
     )
-    webview.start()
+    try:
+        webview.start()
+    except Exception as error:
+        message = (
+            "Flatnotes could not start its WebView2 runtime.\n\n"
+            "Install Microsoft Edge WebView2 Runtime, then start Flatnotes again:\n"
+            "https://developer.microsoft.com/microsoft-edge/webview2/\n\n"
+            f"Details: {error}"
+        )
+        if sys.platform == "win32":
+            import ctypes
+
+            ctypes.windll.user32.MessageBoxW(0, message, "Flatnotes", 0x10)
+        else:
+            print(message)
 
 
 if __name__ == "__main__":

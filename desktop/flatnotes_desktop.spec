@@ -12,4 +12,20 @@ a = Analysis(
     hiddenimports=collect_submodules("flatnotes_desktop"),
 )
 pyz = PYZ(a.pure)
-exe = EXE(pyz, a.scripts, a.binaries, a.datas, name="Flatnotes", console=False)
+exe = EXE(
+    pyz,
+    a.scripts,
+    [],
+    exclude_binaries=True,
+    name="Flatnotes",
+    console=False,
+    upx=False,
+)
+coll = COLLECT(
+    exe,
+    a.binaries,
+    a.datas,
+    name="Flatnotes",
+    strip=False,
+    upx=False,
+)

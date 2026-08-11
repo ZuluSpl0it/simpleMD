@@ -8,17 +8,14 @@ try {
         npm --prefix client ci
         npm --prefix client run build
         uv run pyinstaller flatnotes_desktop.spec --noconfirm --clean
-        New-Item -ItemType Directory -Force dist\Flatnotes | Out-Null
-        if (Test-Path dist\Flatnotes\Flatnotes.exe) {
-            Remove-Item -Force dist\Flatnotes\Flatnotes.exe
-        }
-        Move-Item -Force dist\Flatnotes.exe dist\Flatnotes\Flatnotes.exe
         New-Item -ItemType Directory -Force dist\Flatnotes\data | Out-Null
     }
     $exe = Join-Path $desktop "dist\Flatnotes\Flatnotes.exe"
     if (-not (Test-Path $exe)) { throw "Flatnotes.exe missing" }
+    if (-not (Test-Path (Join-Path (Split-Path $exe) "_internal"))) { throw "PyInstaller onedir support files missing" }
     if (-not (Test-Path (Join-Path (Split-Path $exe) "data"))) { throw "portable data directory missing" }
     Write-Host "Portable build verified: $exe"
+    Write-Host "Distribute the entire dist\Flatnotes folder; Flatnotes.exe cannot run by itself."
 } finally {
     Pop-Location
 }

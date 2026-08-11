@@ -102,6 +102,20 @@ def test_check_file_accepts_an_unchanged_crlf_file(tmp_path: Path):
     assert bridge.check_file({"path": str(path), "modified_ns": document.modified_ns, "content_hash": document.content_hash})["state"] == "clean"
 
 
+def test_document_payload_preserves_nanosecond_timestamp_as_string(tmp_path: Path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+
+    path = tmp_path / "precise-timestamp.md"
+    path.write_text("body", encoding="utf-8")
+    bridge = DesktopBridge(FakeWindow((str(path),)), FileService())
+
+    document = bridge.open_markdown()
+
+    assert document["modified_ns"] == str(path.stat().st_mtime_ns)
+    assert bridge.check_file(document)["state"] == "clean"
+
+
 def test_load_workspace_uses_saved_folder(tmp_path: Path):
     from flatnotes_desktop.bridge import DesktopBridge
     from flatnotes_desktop.files import FileService

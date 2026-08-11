@@ -1,14 +1,5 @@
 <template>
-  <TabBar :tabs="tabs" @new-tab="newTab" @close-tab="closeTab" />
-  <div v-if="tabs.active.value" class="actions">
-    <button type="button" class="edit-toggle" :class="{ active: tabs.active.value.editing }" :aria-pressed="tabs.active.value.editing" @click="toggleEdit">Edit</button>
-    <template v-if="tabs.active.value.editing">
-      <button type="button" @click="saveActive">Save</button>
-      <button type="button" @click="saveActiveAs">Save As</button>
-    </template>
-    <button v-if="tabs.active.value.kind === 'workspace' && tabs.active.value.path" type="button" @click="renameActive">Rename</button>
-    <button v-if="tabs.active.value.kind === 'workspace' && tabs.active.value.path" type="button" @click="deleteActive">Delete</button>
-  </div>
+  <TabBar :tabs="tabs" :active="tabs.active.value" @new-tab="newTab" @close-tab="closeTab" @toggle-edit="toggleEdit" @save="saveActive" @save-as="saveActiveAs" @rename="renameActive" @delete="deleteActive" />
   <HomeView v-if="!tabs.active.value" :workspace="workspace" @select-workspace="selectWorkspace" @open-markdown="openMarkdown" @open-result="openResult" />
   <MarkdownEditor v-else :key="`${tabs.active.value.id}-${tabs.active.value.mode}-${tabs.active.value.editing}`" :content="tabs.active.value.content" :mode="tabs.active.value.mode" :editing="tabs.active.value.editing" @change="(content) => tabs.setContent(tabs.activeId.value, content)" />
   <ConflictDialog v-if="conflictTab" :visible="true" :tab="conflictTab" @resolve="resolveConflict" />

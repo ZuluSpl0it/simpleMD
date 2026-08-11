@@ -123,7 +123,7 @@ class DesktopBridge:
         path = Path(tab["path"])
         if not path.exists():
             return {"state": "missing", "path": str(path)}
-        baseline = Fingerprint(tab["modified_ns"], tab["content_hash"])
+        baseline = Fingerprint(int(tab["modified_ns"]), tab["content_hash"])
         return {"state": "changed" if changed_since(path, baseline) else "clean", "path": str(path)}
 
     @staticmethod
@@ -132,6 +132,8 @@ class DesktopBridge:
             "kind": "external",
             "path": str(document.path),
             "content": document.content,
-            "modified_ns": document.modified_ns,
+            # JavaScript Numbers cannot exactly represent nanosecond timestamps.
+            # Keep this as a decimal string across the webview boundary.
+            "modified_ns": str(document.modified_ns),
             "content_hash": document.content_hash,
         }

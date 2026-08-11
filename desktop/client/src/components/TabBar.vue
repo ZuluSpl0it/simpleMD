@@ -2,6 +2,7 @@
   <nav class="tabs" aria-label="Open files">
     <button v-for="tab in tabs.items" :key="tab.id" type="button" :aria-current="tabs.activeId === tab.id" @click="tabs.activeId = tab.id">
       {{ tab.title }}<span v-if="tab.dirty"> •</span>
+      <span role="button" tabindex="0" @click.stop="$emit('close-tab', tab.id)">×</span>
     </button>
     <button type="button" @click="$emit('new-tab')">+</button>
   </nav>
@@ -9,5 +10,5 @@
 
 <script setup>
 defineProps({ tabs: { type: Object, required: true } });
-defineEmits(["new-tab"]);
+defineEmits(["new-tab", "close-tab"]);
 </script>

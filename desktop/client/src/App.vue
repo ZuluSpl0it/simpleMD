@@ -1,5 +1,5 @@
 <template>
-  <TabBar :tabs="tabs" @new-tab="newTab" />
+  <TabBar :tabs="tabs" @new-tab="newTab" @close-tab="closeTab" />
   <div v-if="tabs.active.value" class="actions">
     <button type="button" @click="saveActive">Save</button>
     <button type="button" @click="saveActiveAs">Save As</button>
@@ -38,6 +38,20 @@ async function saveActiveAs() {
   if (!tab) return;
   const saved = await saveAs(tab);
   if (saved) Object.assign(tab, { kind: "external", path: saved.path, content: saved.content, savedContent: saved.content, dirty: false, fingerprint: saved.content_hash, content_hash: saved.content_hash, modified_ns: saved.modified_ns, title: saved.path.split(/[\\/]/).pop() });
+}
+async function closeTab(id) {
+  const tab = tabs.byId(id);
+  if (!tab) return;
+  if (tab.dirty) {
+    const choice = window.confirm(`Save changes to ${tab.title}?`);
+    if (choice) {
+      const previous = tabs.activeId.value;
+      tabs.activeId.value = id;
+      await saveActive();
+      tabs.activeId.value = previous;
+    }
+  }
+  if (!tab.dirty) tabs.requestClose(id);
 }
 async function pollActiveFile() {
   const tab = tabs.active.value;

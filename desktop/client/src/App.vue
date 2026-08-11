@@ -12,7 +12,7 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from "vue";
 import HomeView from "./views/HomeView.vue";
-import { checkFile, getWorkspace, openDroppedPath, openMarkdown as chooseMarkdown, saveAs, saveTab, selectWorkspace as chooseWorkspace } from "./api/desktop.js";
+import { checkFile, createWorkspaceNote, getWorkspace, openDroppedPath, openMarkdown as chooseMarkdown, saveAs, saveTab, selectWorkspace as chooseWorkspace } from "./api/desktop.js";
 import TabBar from "./components/TabBar.vue";
 import MarkdownEditor from "./components/MarkdownEditor.vue";
 import ConflictDialog from "./components/ConflictDialog.vue";
@@ -33,7 +33,16 @@ async function openResult(result) {
 }
 async function saveActive() {
   const tab = tabs.active.value;
-  if (!tab?.path) return saveActiveAs();
+  if (!tab?.path) {
+    if (tab?.kind === "workspace") {
+      const title = window.prompt("Note title", tab.title === "Untitled" ? "" : tab.title);
+      if (!title) return;
+      const created = await createWorkspaceNote(title, tab.content);
+      Object.assign(tab, { path: created.path, title: created.title, content: created.content, savedContent: created.content, dirty: false, modified_ns: created.modified_ns, content_hash: created.content_hash });
+      return;
+    }
+    return saveActiveAs();
+  }
   const saved = await saveTab(tab);
   Object.assign(tab, { content: saved.content, savedContent: saved.content, dirty: false, fingerprint: saved.content_hash, content_hash: saved.content_hash, modified_ns: saved.modified_ns });
 }

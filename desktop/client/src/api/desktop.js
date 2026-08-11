@@ -13,3 +13,4 @@ export const saveAs = (tab) => api().save_as(tab);
 export const checkFile = (tab) => api().check_file(tab);
 export const openDroppedPath = (path) => api().open_dropped_path(path);
 export const getWorkspace = () => api().get_workspace();
+export const createWorkspaceNote = (title, content) => api().create_workspace_note(title, content);

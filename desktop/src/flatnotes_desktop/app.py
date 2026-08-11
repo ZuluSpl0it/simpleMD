@@ -40,11 +40,13 @@ def run() -> None:
                 f"{{detail: {json.dumps(payload)}}}))"
             )
 
-    window.dom.document.events.drop += DOMEventHandler(
-        on_drop, prevent_default=True, stop_propagation=True
-    )
+    def bind_dom_events(active_window):
+        active_window.dom.document.events.drop += DOMEventHandler(
+            on_drop, prevent_default=True, stop_propagation=True
+        )
+
     try:
-        webview.start()
+        webview.start(bind_dom_events, window)
     except Exception as error:
         message = (
             "Flatnotes could not start its WebView2 runtime.\n\n"

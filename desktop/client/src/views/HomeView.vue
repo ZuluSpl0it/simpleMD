@@ -10,7 +10,7 @@
       <button type="submit">Search</button>
     </form>
     <ul>
-      <li v-for="result in results" :key="result.path">{{ result.title }}</li>
+      <li v-for="result in results" :key="result.path"><button type="button" @click="$emit('open-result', result)">{{ result.title }}</button></li>
     </ul>
   </main>
 </template>
@@ -20,7 +20,7 @@ import { ref } from "vue";
 import { searchWorkspace } from "../api/desktop.js";
 
 defineProps({ workspace: { type: String, default: null } });
-defineEmits(["select-workspace"]);
+defineEmits(["select-workspace", "open-markdown", "open-result"]);
 const term = ref("");
 const results = ref([]);
 

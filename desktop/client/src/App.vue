@@ -4,7 +4,7 @@
     <button type="button" @click="saveActive">Save</button>
     <button type="button" @click="saveActiveAs">Save As</button>
   </div>
-  <HomeView v-if="!tabs.active.value" :workspace="workspace" @select-workspace="selectWorkspace" @open-markdown="openMarkdown" />
+  <HomeView v-if="!tabs.active.value" :workspace="workspace" @select-workspace="selectWorkspace" @open-markdown="openMarkdown" @open-result="openResult" />
   <MarkdownEditor v-else :content="tabs.active.value.content" @change="(content) => tabs.setContent(tabs.activeId.value, content)" />
   <ConflictDialog v-if="conflictTab" :visible="true" :tab="conflictTab" @resolve="resolveConflict" />
 </template>
@@ -26,6 +26,10 @@ function newTab() { tabs.open({ kind: "workspace", title: "Untitled", content: "
 async function openMarkdown() {
   const document = await chooseMarkdown();
   if (document) tabs.open(document);
+}
+async function openResult(result) {
+  const document = await openDroppedPath(result.path);
+  if (document?.kind === "external") tabs.open({ ...document, kind: "workspace", title: result.title });
 }
 async function saveActive() {
   const tab = tabs.active.value;

@@ -3,6 +3,7 @@
   <HomeView v-if="!tabs.active.value" :workspace="workspace" @select-workspace="selectWorkspace" @open-markdown="openMarkdown" @open-result="openResult" />
   <MarkdownEditor v-else :key="`${tabs.active.value.id}-${tabs.active.value.mode}-${tabs.active.value.editing}`" :content="tabs.active.value.content" :mode="tabs.active.value.mode" :editing="tabs.active.value.editing" @change="(content) => tabs.setContent(tabs.activeId.value, content)" />
   <ConflictDialog v-if="conflictTab" :visible="true" :tab="conflictTab" @resolve="resolveConflict" />
+  <CloseDialog v-if="pendingCloseTab" :tab="pendingCloseTab" @resolve="resolveClose" />
 </template>
 
 <script setup>
@@ -12,11 +13,13 @@ import { checkFile, chooseSaveFolder, createWorkspaceNote, deleteWorkspaceNote, 
 import TabBar from "./components/TabBar.vue";
 import MarkdownEditor from "./components/MarkdownEditor.vue";
 import ConflictDialog from "./components/ConflictDialog.vue";
+import CloseDialog from "./components/CloseDialog.vue";
 import { createTabs } from "./stores/tabs.js";
 
 const workspace = ref(null);
 const tabs = createTabs();
 const conflictTab = ref(null);
+const pendingCloseTab = ref(null);
 let pollTimer;
 function newTab() { tabs.open({ kind: "workspace", title: "Untitled", content: "", editing: true }); }
 function toggleEdit() {
@@ -73,16 +76,24 @@ async function deleteActive() {
 async function closeTab(id) {
   const tab = tabs.byId(id);
   if (!tab) return;
-  if (tab.dirty) {
-    const choice = window.confirm(`Save changes to ${tab.title}?`);
-    if (choice) {
-      const previous = tabs.activeId.value;
-      tabs.activeId.value = id;
-      await saveActive();
-      tabs.activeId.value = previous;
-    }
+  if (tab.dirty) { pendingCloseTab.value = tab; return; }
+  tabs.requestClose(id);
+}
+async function resolveClose(action) {
+  const tab = pendingCloseTab.value;
+  if (!tab || action === "cancel") { pendingCloseTab.value = null; return; }
+  if (action === "discard") {
+    tab.dirty = false;
+    tabs.requestClose(tab.id);
+    pendingCloseTab.value = null;
+    return;
   }
-  if (!tab.dirty) tabs.requestClose(id);
+  const previous = tabs.activeId.value;
+  tabs.activeId.value = tab.id;
+  await saveActive();
+  if (!tab.dirty) tabs.requestClose(tab.id);
+  else tabs.activeId.value = previous;
+  pendingCloseTab.value = null;
 }
 async function pollActiveFile() {
   const tab = tabs.active.value;

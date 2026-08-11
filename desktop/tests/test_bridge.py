@@ -9,6 +9,18 @@ class FakeWindow:
         return self.result
 
 
+def test_frontend_can_record_a_startup_event():
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+
+    events = []
+    bridge = DesktopBridge(FakeWindow(None), FileService(), trace=events.append)
+
+    bridge.startup_event("frontend-mounted")
+
+    assert events == ["frontend-mounted"]
+
+
 def test_open_dialog_returns_external_document(tmp_path: Path):
     from flatnotes_desktop.bridge import DesktopBridge
     from flatnotes_desktop.files import FileService

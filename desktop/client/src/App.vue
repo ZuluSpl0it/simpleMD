@@ -9,7 +9,7 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from "vue";
 import HomeView from "./views/HomeView.vue";
-import { checkFile, createWorkspaceNote, deleteWorkspaceNote, getWorkspace, openDroppedPath, openMarkdown as chooseMarkdown, renameWorkspaceNote, saveAs, saveTab, selectWorkspace as chooseWorkspace } from "./api/desktop.js";
+import { checkFile, createWorkspaceNote, deleteWorkspaceNote, getWorkspace, openDroppedPath, openMarkdown as chooseMarkdown, renameWorkspaceNote, saveAs, saveTab, selectWorkspace as chooseWorkspace, startupEvent } from "./api/desktop.js";
 import TabBar from "./components/TabBar.vue";
 import MarkdownEditor from "./components/MarkdownEditor.vue";
 import ConflictDialog from "./components/ConflictDialog.vue";
@@ -118,7 +118,9 @@ function handleDrop(event) {
   if (document?.kind === "external") tabs.open(document);
 }
 onMounted(async () => {
+  await startupEvent("frontend-mounted");
   workspace.value = await getWorkspace();
+  await startupEvent("frontend-workspace-read");
   window.addEventListener("flatnotes-drop", handleDrop);
   pollTimer = window.setInterval(pollActiveFile, 1000);
 });

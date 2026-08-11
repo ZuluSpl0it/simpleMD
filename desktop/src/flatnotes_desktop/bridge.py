@@ -7,11 +7,15 @@ from .watcher import Fingerprint, changed_since
 
 
 class DesktopBridge:
-    def __init__(self, window, file_service: FileService, settings=None, workspace=None):
+    def __init__(self, window, file_service: FileService, settings=None, workspace=None, trace=None):
         self.window = window
         self.file_service = file_service
         self.settings = settings
         self.workspace = workspace
+        self.trace = trace or (lambda _event: None)
+
+    def startup_event(self, event: str) -> None:
+        self.trace(event)
 
     def open_markdown(self) -> dict | None:
         import webview

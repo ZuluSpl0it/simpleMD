@@ -32,3 +32,16 @@ def test_index_rebuild_is_delayed_until_after_startup():
 
     assert calls[0][0:2] == ("created", 2.0)
     assert calls[1] == ("started", True)
+
+
+def test_startup_trace_records_timed_events(tmp_path: Path):
+    from flatnotes_desktop.startup import StartupTrace
+
+    times = iter((100.0, 101.25))
+    trace = StartupTrace(tmp_path / "startup.log", clock=lambda: next(times))
+
+    trace("frontend-mounted")
+
+    content = (tmp_path / "startup.log").read_text(encoding="utf-8")
+    assert "+1.250s" in content
+    assert "frontend-mounted" in content

@@ -15,3 +15,4 @@ export const getWorkspace = () => call("get_workspace");
 export const createWorkspaceNote = (title, content) => call("create_workspace_note", title, content);
 export const renameWorkspaceNote = (title, newTitle) => call("rename_workspace_note", title, newTitle);
 export const deleteWorkspaceNote = (title) => call("delete_workspace_note", title);
+export const startupEvent = (event) => call("startup_event", event);

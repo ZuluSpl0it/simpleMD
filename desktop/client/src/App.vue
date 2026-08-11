@@ -74,6 +74,14 @@ async function selectWorkspace() {
   const selected = await chooseWorkspace();
   if (selected?.workspace) workspace.value = selected.workspace;
 }
-onMounted(async () => { workspace.value = await getWorkspace(); pollTimer = window.setInterval(pollActiveFile, 1000); });
-onUnmounted(() => window.clearInterval(pollTimer));
+function handleDrop(event) {
+  const document = event.detail;
+  if (document?.kind === "external") tabs.open(document);
+}
+onMounted(async () => {
+  workspace.value = await getWorkspace();
+  window.addEventListener("flatnotes-drop", handleDrop);
+  pollTimer = window.setInterval(pollActiveFile, 1000);
+});
+onUnmounted(() => { window.clearInterval(pollTimer); window.removeEventListener("flatnotes-drop", handleDrop); });
 </script>

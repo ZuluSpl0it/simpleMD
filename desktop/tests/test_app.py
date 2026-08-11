@@ -1,7 +1,7 @@
 from pathlib import Path
 
 
-def test_webview_uses_persistent_portable_profile(tmp_path: Path, monkeypatch):
+def test_webview_uses_private_profile(tmp_path: Path, monkeypatch):
     from flatnotes_desktop import app
 
     captured = {}
@@ -9,8 +9,8 @@ def test_webview_uses_persistent_portable_profile(tmp_path: Path, monkeypatch):
 
     app.start_webview("window", "callback", tmp_path)
 
-    assert captured["kwargs"]["private_mode"] is False
-    assert captured["kwargs"]["storage_path"] == str(tmp_path / "webview")
+    assert captured["kwargs"]["private_mode"] is True
+    assert "storage_path" not in captured["kwargs"]
 
 
 def test_index_rebuild_is_delayed_until_after_startup():

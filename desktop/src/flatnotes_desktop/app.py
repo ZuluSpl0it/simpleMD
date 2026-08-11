@@ -27,12 +27,11 @@ def schedule_workspace_rebuild(workspace, delay: float = 2.0, timer_factory=Time
 
 
 def start_webview(window, callback, data_directory: Path) -> None:
-    """Start WebView2 with a reusable profile inside the portable data folder."""
+    """Start WebView2 without a persistent browser profile."""
     webview.start(
         callback,
         window,
-        private_mode=False,
-        storage_path=str(data_directory / "webview"),
+        private_mode=True,
     )
 
 

@@ -10,7 +10,7 @@
     <button v-if="tabs.active.value.kind === 'workspace' && tabs.active.value.path" type="button" @click="deleteActive">Delete</button>
   </div>
   <HomeView v-if="!tabs.active.value" :workspace="workspace" @select-workspace="selectWorkspace" @open-markdown="openMarkdown" @open-result="openResult" />
-  <MarkdownEditor v-else :key="`${tabs.active.value.id}-${tabs.active.value.mode}-${tabs.active.value.editing}`" :content="tabs.active.value.content" :mode="tabs.active.value.mode" :editing="tabs.active.value.editing" @mode-change="(mode) => tabs.active.value.mode = mode" @change="(content) => tabs.setContent(tabs.activeId.value, content)" />
+  <MarkdownEditor v-else :key="`${tabs.active.value.id}-${tabs.active.value.mode}-${tabs.active.value.editing}`" :content="tabs.active.value.content" :mode="tabs.active.value.mode" :editing="tabs.active.value.editing" @change="(content) => tabs.setContent(tabs.activeId.value, content)" />
   <ConflictDialog v-if="conflictTab" :visible="true" :tab="conflictTab" @resolve="resolveConflict" />
 </template>
 

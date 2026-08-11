@@ -104,3 +104,19 @@ def test_load_workspace_uses_saved_folder(tmp_path: Path):
     result = bridge.load_workspace()
 
     assert result["workspace"] == str(workspace.resolve())
+
+
+def test_create_workspace_note_returns_saved_document(tmp_path: Path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+    from flatnotes_desktop.workspace import WorkspaceService
+
+    root = tmp_path / "notes"
+    root.mkdir()
+    service = WorkspaceService(root, tmp_path / "index")
+    bridge = DesktopBridge(FakeWindow(None), FileService(), workspace=service)
+
+    result = bridge.create_workspace_note("Projects/plan", "body")
+
+    assert result["kind"] == "workspace"
+    assert (root / "Projects" / "plan.md").read_text() == "body"

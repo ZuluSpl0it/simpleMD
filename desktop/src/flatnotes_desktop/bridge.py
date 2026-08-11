@@ -94,6 +94,31 @@ class DesktopBridge:
     def get_workspace(self) -> str | None:
         return str(self.workspace.root) if self.workspace else None
 
+    def create_workspace_note(self, title: str, content: str) -> dict:
+        if self.workspace is None:
+            raise ValueError("Select a workspace first.")
+        path = self.workspace.create(title, content)
+        document = self.file_service.open_external(path)
+        payload = self._document_payload(document)
+        payload["kind"] = "workspace"
+        payload["title"] = self.workspace.title_for(path)
+        return payload
+
+    def rename_workspace_note(self, title: str, new_title: str) -> dict:
+        if self.workspace is None:
+            raise ValueError("Select a workspace first.")
+        path = self.workspace.rename(title, new_title)
+        document = self.file_service.open_external(path)
+        payload = self._document_payload(document)
+        payload["kind"] = "workspace"
+        payload["title"] = self.workspace.title_for(path)
+        return payload
+
+    def delete_workspace_note(self, title: str) -> None:
+        if self.workspace is None:
+            raise ValueError("Select a workspace first.")
+        self.workspace.delete(title)
+
     def check_file(self, tab: dict) -> dict:
         path = Path(tab["path"])
         if not path.exists():

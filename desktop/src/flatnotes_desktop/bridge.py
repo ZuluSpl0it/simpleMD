@@ -62,6 +62,20 @@ class DesktopBridge:
             index_dir = self.settings.data_directory / "index"
         else:
             index_dir = root / ".flatnotes"
+        return self._set_workspace(root, index_dir)
+
+    def load_workspace(self) -> dict | None:
+        if self.settings is None:
+            return None
+        saved = self.settings.load().workspace
+        if not saved:
+            return None
+        root = Path(saved).resolve()
+        if not root.is_dir():
+            return {"workspace": None, "error": "Saved workspace folder is unavailable."}
+        return self._set_workspace(root, self.settings.data_directory / "index")
+
+    def _set_workspace(self, root: Path, index_dir: Path) -> dict:
         self.workspace = WorkspaceService(root, index_dir)
         self.workspace.rebuild()
         return {"workspace": str(root)}
@@ -70,6 +84,9 @@ class DesktopBridge:
         if self.workspace is None:
             return []
         return [{"title": result.title, "path": str(result.path)} for result in self.workspace.search(term)]
+
+    def get_workspace(self) -> str | None:
+        return str(self.workspace.root) if self.workspace else None
 
     def check_file(self, tab: dict) -> dict:
         path = Path(tab["path"])

@@ -20,6 +20,7 @@ def run() -> None:
         FileService(),
         settings=SettingsStore(executable_root / "data"),
     )
+    bridge.load_workspace()
     window = webview.create_window(
         "Flatnotes",
         str(asset_root / "index.html"),

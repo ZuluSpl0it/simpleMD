@@ -88,3 +88,19 @@ def test_check_file_reports_external_change(tmp_path: Path):
     bridge = DesktopBridge(FakeWindow(None), FileService())
 
     assert bridge.check_file({"path": str(path), "modified_ns": document.modified_ns, "content_hash": document.content_hash})["state"] == "changed"
+
+
+def test_load_workspace_uses_saved_folder(tmp_path: Path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+    from flatnotes_desktop.settings import SettingsStore
+
+    workspace = tmp_path / "notes"
+    workspace.mkdir()
+    settings = SettingsStore(tmp_path / "data")
+    settings.save_workspace(str(workspace))
+    bridge = DesktopBridge(FakeWindow(None), FileService(), settings=settings)
+
+    result = bridge.load_workspace()
+
+    assert result["workspace"] == str(workspace.resolve())

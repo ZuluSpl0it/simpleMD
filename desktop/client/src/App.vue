@@ -12,7 +12,7 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from "vue";
 import HomeView from "./views/HomeView.vue";
-import { checkFile, openDroppedPath, openMarkdown as chooseMarkdown, saveAs, saveTab, selectWorkspace as chooseWorkspace } from "./api/desktop.js";
+import { checkFile, getWorkspace, openDroppedPath, openMarkdown as chooseMarkdown, saveAs, saveTab, selectWorkspace as chooseWorkspace } from "./api/desktop.js";
 import TabBar from "./components/TabBar.vue";
 import MarkdownEditor from "./components/MarkdownEditor.vue";
 import ConflictDialog from "./components/ConflictDialog.vue";
@@ -74,6 +74,6 @@ async function selectWorkspace() {
   const selected = await chooseWorkspace();
   if (selected?.workspace) workspace.value = selected.workspace;
 }
-onMounted(() => { pollTimer = window.setInterval(pollActiveFile, 1000); });
+onMounted(async () => { workspace.value = await getWorkspace(); pollTimer = window.setInterval(pollActiveFile, 1000); });
 onUnmounted(() => window.clearInterval(pollTimer));
 </script>

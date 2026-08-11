@@ -52,6 +52,11 @@ button:hover { border-color: #a8a29e; background: #44403c; }
 .editor-shell.editing { height: calc(100vh - 44px); }
 .editor { flex: 1; min-height: 0; overflow: hidden; }
 .editor.viewing { overflow-y: auto; }
+.editor.viewing .toastui-editor-contents,
+.editor.viewing .toastui-editor-contents * {
+  -webkit-user-select: text;
+  user-select: text;
+}
 .editor.markdown-only .toastui-editor-md-preview { display: none !important; }
 .editor.markdown-only .toastui-editor-md-container { width: 100% !important; }
 .editor .toastui-editor-md-tab-container { display: none !important; }

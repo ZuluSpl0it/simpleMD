@@ -8,6 +8,8 @@ try {
         npm --prefix client ci
         npm --prefix client run build
         uv run pyinstaller flatnotes_desktop.spec --noconfirm --clean
+        New-Item -ItemType Directory -Force dist\Flatnotes | Out-Null
+        Move-Item -Force dist\Flatnotes.exe dist\Flatnotes\Flatnotes.exe
         New-Item -ItemType Directory -Force dist\Flatnotes\data | Out-Null
     }
     $exe = Join-Path $desktop "dist\Flatnotes\Flatnotes.exe"

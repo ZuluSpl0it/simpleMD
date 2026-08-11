@@ -1,10 +1,8 @@
-import json
 from pathlib import Path
 import sys
-from threading import Thread, Timer
+from threading import Timer
 
 import webview
-from webview.dom import DOMEventHandler
 
 from .bridge import DesktopBridge
 from .files import FileService
@@ -38,16 +36,6 @@ def start_webview(window, callback, data_directory: Path) -> None:
     )
 
 
-def bind_after_window_loaded(active_window, binder, trace, thread_factory=Thread) -> None:
-    """Defer DOM access until WebView2 has completed its first navigation."""
-    def wait_and_bind():
-        trace("waiting-for-window-loaded")
-        active_window.events.loaded.wait()
-        binder(active_window)
-
-    thread_factory(wait_and_bind, daemon=True).start()
-
-
 def run() -> None:
     asset_root = Path(__file__).with_name("assets")
     executable_root = Path(sys.executable).parent
@@ -78,37 +66,25 @@ def run() -> None:
     trace("window-configured")
     window.events.before_show += lambda: trace("window-before-show")
     window.events.shown += lambda: trace("window-shown")
-    window.events.loaded += lambda: trace("window-loaded")
 
-    def on_drop(event):
-        files = event.get("domTransfer", {}).get("files", [])
-        if not files:
-            return
-        path = files[0].get("pywebviewFullPath")
-        if path:
-            payload = bridge.open_dropped_path(path)
-            window.evaluate_js(
-                "window.dispatchEvent(new CustomEvent('flatnotes-drop', "
-                f"{{detail: {json.dumps(payload)}}}))"
-            )
+    def on_loaded():
+        trace("window-loaded")
+        if bridge.workspace is not None:
+            schedule_workspace_rebuild(bridge.workspace, trace=trace)
+            trace("index-rebuild-scheduled")
 
-    def bind_dom_events(active_window):
+    def startup_callback(_active_window):
+        # Avoid pywebview's DOM event bridge during startup. On WebView2 this
+        # registration can block the callback thread and leave the native
+        # window showing as "Not Responding" on the first launch.
         trace("startup-callback-entered")
+        trace("drop-handler-disabled")
 
-        def bind_loaded(window):
-            window.dom.document.events.drop += DOMEventHandler(
-                on_drop, prevent_default=True, stop_propagation=True
-            )
-            trace("drop-handler-bound")
-            if bridge.workspace is not None:
-                schedule_workspace_rebuild(bridge.workspace, trace=trace)
-                trace("index-rebuild-scheduled")
-
-        bind_after_window_loaded(active_window, bind_loaded, trace)
+    window.events.loaded += on_loaded
 
     try:
         trace("webview-start-entered")
-        start_webview(window, bind_dom_events, data_directory)
+        start_webview(window, startup_callback, data_directory)
         trace("webview-start-returned")
     except Exception as error:
         trace(f"webview-error:{type(error).__name__}")

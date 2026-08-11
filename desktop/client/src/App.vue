@@ -99,8 +99,10 @@ async function resolveConflict(action) {
   conflictTab.value = null;
 }
 async function selectWorkspace() {
-  const selected = await chooseWorkspace();
-  if (selected?.workspace) workspace.value = selected.workspace;
+  try {
+    const selected = await chooseWorkspace();
+    if (selected?.workspace) workspace.value = selected.workspace;
+  } catch (error) { window.alert(`Could not select workspace: ${error.message}`); }
 }
 function handleDrop(event) {
   const document = event.detail;

@@ -3,11 +3,12 @@
   <div v-if="tabs.active.value" class="actions">
     <button type="button" @click="saveActive">Save</button>
     <button type="button" @click="saveActiveAs">Save As</button>
+    <button type="button" @click="toggleMode">{{ tabs.active.value.mode === 'markdown' ? 'WYSIWYG' : 'Markdown' }}</button>
     <button v-if="tabs.active.value.kind === 'workspace' && tabs.active.value.path" type="button" @click="renameActive">Rename</button>
     <button v-if="tabs.active.value.kind === 'workspace' && tabs.active.value.path" type="button" @click="deleteActive">Delete</button>
   </div>
   <HomeView v-if="!tabs.active.value" :workspace="workspace" @select-workspace="selectWorkspace" @open-markdown="openMarkdown" @open-result="openResult" />
-  <MarkdownEditor v-else :content="tabs.active.value.content" @change="(content) => tabs.setContent(tabs.activeId.value, content)" />
+  <MarkdownEditor v-else :key="`${tabs.active.value.id}-${tabs.active.value.mode}`" :content="tabs.active.value.content" :mode="tabs.active.value.mode" @change="(content) => tabs.setContent(tabs.activeId.value, content)" />
   <ConflictDialog v-if="conflictTab" :visible="true" :tab="conflictTab" @resolve="resolveConflict" />
 </template>
 
@@ -25,6 +26,10 @@ const tabs = createTabs();
 const conflictTab = ref(null);
 let pollTimer;
 function newTab() { tabs.open({ kind: "workspace", title: "Untitled", content: "" }); }
+function toggleMode() {
+  const tab = tabs.active.value;
+  if (tab) tab.mode = tab.mode === "markdown" ? "wysiwyg" : "markdown";
+}
 async function openMarkdown() {
   const document = await chooseMarkdown();
   if (document) tabs.open(document);

@@ -18,6 +18,7 @@ export function createTabs() {
       modified_ns: document.modified_ns || 0,
       content_hash: document.content_hash || null,
       mode: document.mode || "markdown",
+      editing: document.editing ?? false,
     });
     activeId.value = id;
     return id;

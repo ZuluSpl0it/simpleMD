@@ -6,7 +6,7 @@
 }
 
 * { box-sizing: border-box; }
-body { margin: 0; min-width: 720px; min-height: 100vh; background: #171717; }
+html, body { margin: 0; min-width: 720px; width: 100%; height: 100%; overflow: hidden; background: #171717; }
 button, input { font: inherit; }
 button {
   border: 1px solid #44403c;
@@ -19,7 +19,7 @@ button {
 }
 button:hover { border-color: #a8a29e; background: #44403c; }
 
-#app { min-height: 100vh; }
+#app { width: 100%; height: 100vh; overflow: hidden; }
 .tabs {
   display: flex;
   gap: 4px;
@@ -32,7 +32,8 @@ button:hover { border-color: #a8a29e; background: #44403c; }
 .tabs button { border: 0; border-radius: 5px; color: #a8a29e; padding: 8px 12px; }
 .tabs button[aria-current="true"] { background: #44403c; color: #fff; }
 .tabs button:last-child { margin-left: 4px; color: #d6d3d1; }
-.actions { display: flex; gap: 8px; padding: 10px 24px 0; }
+.actions { display: flex; gap: 8px; align-items: center; padding: 10px 24px 0; }
+.edit-toggle.active { background: #ea580c; border-color: #fb923c; color: #fff; }
 .home { width: min(900px, calc(100vw - 48px)); margin: 0 auto; padding: 72px 0; }
 .home h1 { margin: 0 0 10px; font-size: 42px; letter-spacing: -.04em; }
 .home p { color: #a8a29e; margin: 0 0 26px; }
@@ -45,9 +46,15 @@ button:hover { border-color: #a8a29e; background: #44403c; }
 .home li { border-bottom: 1px solid #292524; padding: 12px 0; }
 .home li button { border: 0; background: transparent; padding: 0; color: #d6d3d1; }
 .home li button:hover { color: #fff; }
-.editor { min-height: calc(100vh - 44px); }
+.editor-shell { height: calc(100vh - 44px); display: flex; flex-direction: column; overflow: hidden; }
+.editor-shell.editing { height: calc(100vh - 94px); }
+.editor { flex: 1; min-height: 0; overflow: hidden; }
+.editor.viewing { overflow-y: auto; }
 .editor.markdown-only .toastui-editor-md-preview { display: none !important; }
 .editor.markdown-only .toastui-editor-md-container { width: 100% !important; }
 .toastui-editor-dark { border-color: #44403c !important; }
+.editor-mode-tabs { display: flex; justify-content: center; gap: 0; height: 34px; flex: 0 0 34px; background: #1c1917; }
+.editor-mode-tabs button { min-width: 96px; padding: 5px 14px; border-radius: 0; border-color: #57534e; color: #a8a29e; background: #292524; }
+.editor-mode-tabs button.active { color: #fff; border-color: #a8a29e; background: #44403c; }
 .conflict { position: fixed; right: 20px; bottom: 20px; z-index: 20; display: flex; gap: 8px; align-items: center; padding: 14px 16px; border: 1px solid #78716c; border-radius: 8px; background: #292524; box-shadow: 0 8px 30px #0008; }
 .conflict p { margin: 0 12px 0 0; }

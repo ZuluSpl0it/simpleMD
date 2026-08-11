@@ -1,0 +1,50 @@
+:root {
+  color: #e7e5e4;
+  background: #171717;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 720px; min-height: 100vh; background: #171717; }
+button, input { font: inherit; }
+button {
+  border: 1px solid #44403c;
+  border-radius: 6px;
+  background: #292524;
+  color: #f5f5f4;
+  cursor: pointer;
+  padding: 7px 12px;
+  transition: background .15s, border-color .15s;
+}
+button:hover { border-color: #a8a29e; background: #44403c; }
+
+#app { min-height: 100vh; }
+.tabs {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  min-height: 44px;
+  padding: 6px 12px;
+  border-bottom: 1px solid #292524;
+  background: #1c1917;
+}
+.tabs button { border: 0; border-radius: 5px; color: #a8a29e; padding: 8px 12px; }
+.tabs button[aria-current="true"] { background: #44403c; color: #fff; }
+.tabs button:last-child { margin-left: 4px; color: #d6d3d1; }
+.actions { display: flex; gap: 8px; padding: 10px 24px 0; }
+.home { width: min(900px, calc(100vw - 48px)); margin: 0 auto; padding: 72px 0; }
+.home h1 { margin: 0 0 10px; font-size: 42px; letter-spacing: -.04em; }
+.home p { color: #a8a29e; margin: 0 0 26px; }
+.home form { display: flex; width: min(620px, 100%); margin-top: 16px; }
+.home input { flex: 1; border: 1px solid #44403c; border-radius: 6px 0 0 6px; background: #1c1917; color: #f5f5f4; padding: 9px 12px; outline: 0; }
+.home input:focus { border-color: #a8a29e; }
+.home form button { border-radius: 0 6px 6px 0; }
+.home > button { margin-right: 8px; }
+.home ul { max-width: 620px; padding: 0; list-style: none; }
+.home li { border-bottom: 1px solid #292524; padding: 12px 0; }
+.home li button { border: 0; background: transparent; padding: 0; color: #d6d3d1; }
+.home li button:hover { color: #fff; }
+.editor { min-height: calc(100vh - 44px); }
+.conflict { position: fixed; right: 20px; bottom: 20px; z-index: 20; display: flex; gap: 8px; align-items: center; padding: 14px 16px; border: 1px solid #78716c; border-radius: 8px; background: #292524; box-shadow: 0 8px 30px #0008; }
+.conflict p { margin: 0 12px 0 0; }

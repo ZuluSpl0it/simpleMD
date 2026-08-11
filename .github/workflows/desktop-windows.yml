@@ -1,0 +1,41 @@
+name: Desktop Windows
+
+on:
+  push:
+    branches: [develop]
+  pull_request:
+    paths:
+      - "desktop/**"
+      - ".github/workflows/desktop-windows.yml"
+
+jobs:
+  test-and-build:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: desktop
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: latest
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Python dependencies
+        run: uv sync --dev
+      - name: Python tests
+        run: uv run pytest -q
+      - name: Frontend install and tests
+        run: |
+          npm --prefix client ci
+          npm --prefix client test
+          npm --prefix client run build
+      - name: Build portable executable
+        run: .\scripts\build_windows.ps1
+        shell: powershell
+      - name: Upload portable build
+        uses: actions/upload-artifact@v4
+        with:
+          name: flatnotes-windows-portable
+          path: desktop/dist/Flatnotes

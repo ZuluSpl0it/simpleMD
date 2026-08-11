@@ -42,10 +42,12 @@ class DesktopBridge:
         if not result:
             return None
         document = self.file_service.save_external(result[0], tab.get("content", ""))
+        self._refresh_workspace_for(document.path)
         return self._document_payload(document)
 
     def save_tab(self, tab: dict) -> dict:
         document = self.file_service.save_external(tab["path"], tab.get("content", ""))
+        self._refresh_workspace_for(document.path)
         return self._document_payload(document)
 
     def select_workspace(self) -> dict | None:
@@ -79,6 +81,10 @@ class DesktopBridge:
         self.workspace = WorkspaceService(root, index_dir)
         self.workspace.rebuild()
         return {"workspace": str(root)}
+
+    def _refresh_workspace_for(self, path: Path) -> None:
+        if self.workspace and self.workspace.root in path.resolve().parents:
+            self.workspace.rebuild()
 
     def search_workspace(self, term: str) -> list[dict]:
         if self.workspace is None:

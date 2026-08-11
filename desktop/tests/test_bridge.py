@@ -144,6 +144,22 @@ def test_load_workspace_uses_saved_folder(tmp_path: Path):
     assert result["workspace"] == str(workspace.resolve())
 
 
+def test_restore_workspace_defaults_to_portable_workspace_folder(tmp_path: Path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+    from flatnotes_desktop.settings import SettingsStore
+
+    settings = SettingsStore(tmp_path / "data")
+    bridge = DesktopBridge(FakeWindow(None), FileService(), settings=settings)
+
+    result = bridge.restore_workspace()
+
+    expected = (tmp_path / "workspace").resolve()
+    assert result["workspace"] == str(expected)
+    assert expected.is_dir()
+    assert settings.load().workspace == str(expected)
+
+
 def test_restore_workspace_does_not_build_index_before_the_window_opens(tmp_path: Path, monkeypatch):
     from flatnotes_desktop.bridge import DesktopBridge
     from flatnotes_desktop.files import FileService

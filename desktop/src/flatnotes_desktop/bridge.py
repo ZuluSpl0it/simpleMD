@@ -82,8 +82,11 @@ class DesktopBridge:
             return None
         saved = self.settings.load().workspace
         if not saved:
-            return None
-        root = Path(saved).resolve()
+            root = (self.settings.data_directory.parent / "workspace").resolve()
+            root.mkdir(parents=True, exist_ok=True)
+            self.settings.save_workspace(str(root))
+        else:
+            root = Path(saved).resolve()
         if not root.is_dir():
             return {"workspace": None, "error": "Saved workspace folder is unavailable."}
         self.workspace = WorkspaceService(root, self.settings.data_directory / "index")

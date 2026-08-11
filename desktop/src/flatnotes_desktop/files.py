@@ -15,6 +15,7 @@ class FileService:
 
     def save_external(self, path: Path | str, content: str) -> Document:
         target = self._markdown_destination(path)
+        target.parent.mkdir(parents=True, exist_ok=True)
         temporary = target.with_name(f".{target.name}.tmp")
         temporary.write_text(content, encoding="utf-8", newline="")
         os.replace(temporary, target)

@@ -8,7 +8,7 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from "vue";
 import HomeView from "./views/HomeView.vue";
-import { checkFile, createWorkspaceNote, deleteWorkspaceNote, getWorkspace, openDroppedPath, openMarkdown as chooseMarkdown, renameWorkspaceNote, saveAs, saveTab, selectWorkspace as chooseWorkspace } from "./api/desktop.js";
+import { checkFile, chooseSaveFolder, createWorkspaceNote, deleteWorkspaceNote, getWorkspace, openDroppedPath, openMarkdown as chooseMarkdown, renameWorkspaceNote, saveInFolder, saveTab, selectWorkspace as chooseWorkspace } from "./api/desktop.js";
 import TabBar from "./components/TabBar.vue";
 import MarkdownEditor from "./components/MarkdownEditor.vue";
 import ConflictDialog from "./components/ConflictDialog.vue";
@@ -49,7 +49,12 @@ async function saveActive() {
 async function saveActiveAs() {
   const tab = tabs.active.value;
   if (!tab) return;
-  const saved = await saveAs(tab);
+  const folder = await chooseSaveFolder();
+  if (!folder) return;
+  const defaultName = tab.path?.split(/[\\/]/).pop() || "Untitled.md";
+  const relativePath = window.prompt("File name or subfolder path", defaultName);
+  if (!relativePath) return;
+  const saved = await saveInFolder(folder, relativePath, tab.content);
   if (saved) Object.assign(tab, { kind: "external", path: saved.path, content: saved.content, savedContent: saved.content, dirty: false, fingerprint: saved.content_hash, content_hash: saved.content_hash, modified_ns: saved.modified_ns, title: saved.path.split(/[\\/]/).pop() });
 }
 async function renameActive() {

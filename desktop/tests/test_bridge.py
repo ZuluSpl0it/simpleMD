@@ -44,6 +44,20 @@ def test_save_as_writes_selected_markdown_path(tmp_path: Path):
     assert result["path"] == str(destination.resolve())
 
 
+def test_save_in_folder_creates_nested_markdown_path(tmp_path: Path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+
+    destination = tmp_path / "chosen-folder"
+    destination.mkdir()
+    bridge = DesktopBridge(FakeWindow(None), FileService())
+
+    result = bridge.save_in_folder(str(destination), "sub/README.md", "body")
+
+    assert (destination / "sub" / "README.md").read_text(encoding="utf-8") == "body"
+    assert result["path"] == str((destination / "sub" / "README.md").resolve())
+
+
 def test_select_workspace_persists_folder(tmp_path: Path):
     from flatnotes_desktop.bridge import DesktopBridge
     from flatnotes_desktop.settings import SettingsStore

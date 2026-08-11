@@ -17,6 +17,17 @@ def test_open_and_save_external_markdown(tmp_path: Path):
     assert saved.content == "new"
 
 
+def test_save_external_creates_missing_subfolders(tmp_path: Path):
+    from flatnotes_desktop.files import FileService
+
+    path = tmp_path / "Projects" / "2026" / "meeting.md"
+
+    saved = FileService().save_external(path, "notes")
+
+    assert path.read_text(encoding="utf-8") == "notes"
+    assert saved.path == path.resolve()
+
+
 def test_external_open_rejects_non_markdown(tmp_path: Path):
     from flatnotes_desktop.files import FileService
 

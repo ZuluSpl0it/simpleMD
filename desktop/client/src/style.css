@@ -52,6 +52,7 @@ button:hover { border-color: #a8a29e; background: #44403c; }
 .editor-shell.editing { height: calc(100vh - 44px); }
 .editor { flex: 1; min-height: 0; overflow: hidden; }
 .editor.viewing { overflow-y: auto; }
+.editor.viewing .toastui-editor-contents { padding: 18px 24px; }
 .editor.viewing .toastui-editor-contents,
 .editor.viewing .toastui-editor-contents * {
   -webkit-user-select: text;

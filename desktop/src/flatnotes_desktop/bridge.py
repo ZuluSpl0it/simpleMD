@@ -45,6 +45,24 @@ class DesktopBridge:
         self._refresh_workspace_for(document.path)
         return self._document_payload(document)
 
+    def choose_save_folder(self) -> str | None:
+        import webview
+
+        result = self.window.create_file_dialog(webview.FOLDER_DIALOG)
+        return result[0] if result else None
+
+    def save_in_folder(self, folder: str, relative_path: str, content: str) -> dict:
+        root = Path(folder).resolve(strict=True)
+        relative = Path(relative_path)
+        if relative.is_absolute() or ".." in relative.parts:
+            raise ValueError("Save path must stay inside the selected folder.")
+        destination = (root / relative).resolve(strict=False)
+        if not destination.is_relative_to(root):
+            raise ValueError("Save path must stay inside the selected folder.")
+        document = self.file_service.save_external(destination, content)
+        self._refresh_workspace_for(document.path)
+        return self._document_payload(document)
+
     def save_tab(self, tab: dict) -> dict:
         document = self.file_service.save_external(tab["path"], tab.get("content", ""))
         self._refresh_workspace_for(document.path)

@@ -67,6 +67,13 @@ class DesktopBridge:
         return self._set_workspace(root, index_dir)
 
     def load_workspace(self) -> dict | None:
+        result = self.restore_workspace()
+        if result and self.workspace:
+            self.workspace.rebuild()
+        return result
+
+    def restore_workspace(self) -> dict | None:
+        """Restore the selected folder without blocking startup on indexing."""
         if self.settings is None:
             return None
         saved = self.settings.load().workspace
@@ -75,7 +82,8 @@ class DesktopBridge:
         root = Path(saved).resolve()
         if not root.is_dir():
             return {"workspace": None, "error": "Saved workspace folder is unavailable."}
-        return self._set_workspace(root, self.settings.data_directory / "index")
+        self.workspace = WorkspaceService(root, self.settings.data_directory / "index")
+        return {"workspace": str(root)}
 
     def _set_workspace(self, root: Path, index_dir: Path) -> dict:
         self.workspace = WorkspaceService(root, index_dir)

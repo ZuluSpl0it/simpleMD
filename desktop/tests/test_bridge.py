@@ -132,6 +132,23 @@ def test_load_workspace_uses_saved_folder(tmp_path: Path):
     assert result["workspace"] == str(workspace.resolve())
 
 
+def test_restore_workspace_does_not_build_index_before_the_window_opens(tmp_path: Path, monkeypatch):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+    from flatnotes_desktop.settings import SettingsStore
+    from flatnotes_desktop.workspace import WorkspaceService
+
+    workspace = tmp_path / "notes"
+    workspace.mkdir()
+    settings = SettingsStore(tmp_path / "data")
+    settings.save_workspace(str(workspace))
+    bridge = DesktopBridge(FakeWindow(None), FileService(), settings=settings)
+
+    monkeypatch.setattr(WorkspaceService, "rebuild", lambda _self: (_ for _ in ()).throw(AssertionError("should rebuild later")))
+
+    assert bridge.restore_workspace()["workspace"] == str(workspace.resolve())
+
+
 def test_create_workspace_note_returns_saved_document(tmp_path: Path):
     from flatnotes_desktop.bridge import DesktopBridge
     from flatnotes_desktop.files import FileService

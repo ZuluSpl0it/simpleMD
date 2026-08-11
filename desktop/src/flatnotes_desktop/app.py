@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import sys
+from threading import Thread
 
 import webview
 from webview.dom import DOMEventHandler
@@ -20,7 +21,7 @@ def run() -> None:
         FileService(),
         settings=SettingsStore(executable_root / "data"),
     )
-    bridge.load_workspace()
+    bridge.restore_workspace()
     window = webview.create_window(
         "Flatnotes",
         str(asset_root / "index.html"),
@@ -44,6 +45,8 @@ def run() -> None:
         active_window.dom.document.events.drop += DOMEventHandler(
             on_drop, prevent_default=True, stop_propagation=True
         )
+        if bridge.workspace is not None:
+            Thread(target=bridge.workspace.rebuild, daemon=True).start()
 
     try:
         webview.start(bind_dom_events, window)

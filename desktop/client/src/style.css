@@ -54,6 +54,7 @@ button:hover { border-color: #a8a29e; background: #44403c; }
 .editor.viewing { overflow-y: auto; }
 .editor.markdown-only .toastui-editor-md-preview { display: none !important; }
 .editor.markdown-only .toastui-editor-md-container { width: 100% !important; }
+.editor .toastui-editor-md-tab-container { display: none !important; }
 .toastui-editor-dark { border-color: #44403c !important; }
 .conflict { position: fixed; right: 20px; bottom: 20px; z-index: 20; display: flex; gap: 8px; align-items: center; padding: 14px 16px; border: 1px solid #78716c; border-radius: 8px; background: #292524; box-shadow: 0 8px 30px #0008; }
 .conflict p { margin: 0 12px 0 0; }

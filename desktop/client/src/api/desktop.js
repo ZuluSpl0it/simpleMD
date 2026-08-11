@@ -9,8 +9,6 @@ export const openMarkdown = () => call("open_markdown");
 export const selectWorkspace = () => call("select_workspace");
 export const saveTab = (tab) => call("save_tab", tab);
 export const saveAs = (tab) => call("save_as", tab);
-export const chooseSaveFolder = () => call("choose_save_folder");
-export const saveInFolder = (folder, relativePath, content) => call("save_in_folder", folder, relativePath, content);
 export const checkFile = (tab) => call("check_file", tab);
 export const openDroppedPath = (path) => call("open_dropped_path", path);
 export const getWorkspace = () => call("get_workspace");

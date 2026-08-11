@@ -3,6 +3,8 @@
   <div v-if="tabs.active.value" class="actions">
     <button type="button" @click="saveActive">Save</button>
     <button type="button" @click="saveActiveAs">Save As</button>
+    <button v-if="tabs.active.value.kind === 'workspace' && tabs.active.value.path" type="button" @click="renameActive">Rename</button>
+    <button v-if="tabs.active.value.kind === 'workspace' && tabs.active.value.path" type="button" @click="deleteActive">Delete</button>
   </div>
   <HomeView v-if="!tabs.active.value" :workspace="workspace" @select-workspace="selectWorkspace" @open-markdown="openMarkdown" @open-result="openResult" />
   <MarkdownEditor v-else :content="tabs.active.value.content" @change="(content) => tabs.setContent(tabs.activeId.value, content)" />
@@ -12,7 +14,7 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from "vue";
 import HomeView from "./views/HomeView.vue";
-import { checkFile, createWorkspaceNote, getWorkspace, openDroppedPath, openMarkdown as chooseMarkdown, saveAs, saveTab, selectWorkspace as chooseWorkspace } from "./api/desktop.js";
+import { checkFile, createWorkspaceNote, deleteWorkspaceNote, getWorkspace, openDroppedPath, openMarkdown as chooseMarkdown, renameWorkspaceNote, saveAs, saveTab, selectWorkspace as chooseWorkspace } from "./api/desktop.js";
 import TabBar from "./components/TabBar.vue";
 import MarkdownEditor from "./components/MarkdownEditor.vue";
 import ConflictDialog from "./components/ConflictDialog.vue";
@@ -51,6 +53,19 @@ async function saveActiveAs() {
   if (!tab) return;
   const saved = await saveAs(tab);
   if (saved) Object.assign(tab, { kind: "external", path: saved.path, content: saved.content, savedContent: saved.content, dirty: false, fingerprint: saved.content_hash, content_hash: saved.content_hash, modified_ns: saved.modified_ns, title: saved.path.split(/[\\/]/).pop() });
+}
+async function renameActive() {
+  const tab = tabs.active.value;
+  const title = window.prompt("New note title", tab.title);
+  if (!title || title === tab.title) return;
+  const renamed = await renameWorkspaceNote(tab.title, title);
+  Object.assign(tab, { title: renamed.title, path: renamed.path, modified_ns: renamed.modified_ns, content_hash: renamed.content_hash });
+}
+async function deleteActive() {
+  const tab = tabs.active.value;
+  if (!window.confirm(`Delete ${tab.title}?`)) return;
+  await deleteWorkspaceNote(tab.title);
+  tabs.requestClose(tab.id);
 }
 async function closeTab(id) {
   const tab = tabs.byId(id);

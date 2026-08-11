@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 import sys
-from threading import Timer
+from threading import Thread, Timer
 
 import webview
 from webview.dom import DOMEventHandler
@@ -36,6 +36,16 @@ def start_webview(window, callback, data_directory: Path) -> None:
         private_mode=False,
         storage_path=str(data_directory / "webview"),
     )
+
+
+def bind_after_window_loaded(active_window, binder, trace, thread_factory=Thread) -> None:
+    """Defer DOM access until WebView2 has completed its first navigation."""
+    def wait_and_bind():
+        trace("waiting-for-window-loaded")
+        active_window.events.loaded.wait()
+        binder(active_window)
+
+    thread_factory(wait_and_bind, daemon=True).start()
 
 
 def run() -> None:
@@ -84,13 +94,17 @@ def run() -> None:
 
     def bind_dom_events(active_window):
         trace("startup-callback-entered")
-        active_window.dom.document.events.drop += DOMEventHandler(
-            on_drop, prevent_default=True, stop_propagation=True
-        )
-        trace("drop-handler-bound")
-        if bridge.workspace is not None:
-            schedule_workspace_rebuild(bridge.workspace, trace=trace)
-            trace("index-rebuild-scheduled")
+
+        def bind_loaded(window):
+            window.dom.document.events.drop += DOMEventHandler(
+                on_drop, prevent_default=True, stop_propagation=True
+            )
+            trace("drop-handler-bound")
+            if bridge.workspace is not None:
+                schedule_workspace_rebuild(bridge.workspace, trace=trace)
+                trace("index-rebuild-scheduled")
+
+        bind_after_window_loaded(active_window, bind_loaded, trace)
 
     try:
         trace("webview-start-entered")

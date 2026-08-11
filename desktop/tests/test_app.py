@@ -45,3 +45,28 @@ def test_startup_trace_records_timed_events(tmp_path: Path):
     content = (tmp_path / "startup.log").read_text(encoding="utf-8")
     assert "+1.250s" in content
     assert "frontend-mounted" in content
+
+
+def test_dom_binding_waits_for_window_loaded():
+    from flatnotes_desktop.app import bind_after_window_loaded
+
+    events = []
+
+    class FakeThread:
+        def __init__(self, target, daemon):
+            self.target = target
+            self.daemon = daemon
+
+        def start(self):
+            self.target()
+
+    class Loaded:
+        def wait(self):
+            events.append("waited")
+
+    class Window:
+        events = type("Events", (), {"loaded": Loaded()})()
+
+    bind_after_window_loaded(Window(), lambda _window: events.append("bound"), events.append, thread_factory=FakeThread)
+
+    assert events == ["waiting-for-window-loaded", "waited", "bound"]

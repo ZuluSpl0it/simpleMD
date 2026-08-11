@@ -90,6 +90,18 @@ def test_check_file_reports_external_change(tmp_path: Path):
     assert bridge.check_file({"path": str(path), "modified_ns": document.modified_ns, "content_hash": document.content_hash})["state"] == "changed"
 
 
+def test_check_file_accepts_an_unchanged_crlf_file(tmp_path: Path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+
+    path = tmp_path / "windows-note.md"
+    path.write_bytes(b"first line\r\nsecond line\r\n")
+    document = FileService().open_external(path)
+    bridge = DesktopBridge(FakeWindow(None), FileService())
+
+    assert bridge.check_file({"path": str(path), "modified_ns": document.modified_ns, "content_hash": document.content_hash})["state"] == "clean"
+
+
 def test_load_workspace_uses_saved_folder(tmp_path: Path):
     from flatnotes_desktop.bridge import DesktopBridge
     from flatnotes_desktop.files import FileService

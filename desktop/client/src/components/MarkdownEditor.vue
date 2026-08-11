@@ -11,6 +11,7 @@
 <script setup>
 import Editor from "@toast-ui/editor";
 import "@toast-ui/editor/dist/toastui-editor.css";
+import "@toast-ui/editor/dist/theme/toastui-editor-dark.css";
 import { onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 const props = defineProps({ content: { type: String, default: "" }, mode: { type: String, default: "markdown" }, editing: { type: Boolean, default: false } });
@@ -20,7 +21,7 @@ let editor;
 onMounted(() => {
   const options = { el: container.value, height: "100%", theme: "dark", initialValue: props.content };
   editor = props.editing
-    ? new Editor({ ...options, initialEditType: props.mode, previewStyle: "tab" })
+    ? new Editor({ ...options, initialEditType: props.mode, previewStyle: "tab", hideModeSwitch: true })
     : Editor.factory({ ...options, viewer: true });
   if (props.editing) editor.on("change", () => emit("change", editor.getMarkdown()));
 });

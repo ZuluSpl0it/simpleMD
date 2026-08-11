@@ -43,5 +43,9 @@ class FileService:
             path=path,
             content=content,
             modified_ns=path.stat().st_mtime_ns,
-            content_hash=hashlib.sha256(content.encode("utf-8")).hexdigest(),
+            # Fingerprints are compared with watcher.fingerprint(), which hashes
+            # on-disk bytes.  Hash bytes here too: read_text() normalizes CRLF
+            # to LF, so hashing the decoded text would report unchanged Windows
+            # files as externally modified forever.
+            content_hash=hashlib.sha256(path.read_bytes()).hexdigest(),
         )

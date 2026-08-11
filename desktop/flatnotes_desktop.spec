@@ -6,7 +6,7 @@ root = Path(SPEC).parent
 client_dist = root / "client" / "dist"
 
 a = Analysis(
-    [str(root / "src" / "flatnotes_desktop" / "app.py")],
+    [str(root / "src" / "desktop_entry.py")],
     pathex=[str(root / "src")],
     datas=[(str(client_dist), "flatnotes_desktop/assets")],
     hiddenimports=collect_submodules("flatnotes_desktop"),

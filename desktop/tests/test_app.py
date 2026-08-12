@@ -45,3 +45,14 @@ def test_startup_trace_records_timed_events(tmp_path: Path):
     content = (tmp_path / "startup.log").read_text(encoding="utf-8")
     assert "+1.250s" in content
     assert "frontend-mounted" in content
+
+
+def test_navigate_to_app_loads_full_frontend_after_splash():
+    from flatnotes_desktop.app import navigate_to_app
+
+    calls = []
+    window = type("Window", (), {"load_url": lambda self, url: calls.append(url)})()
+
+    navigate_to_app(window, Path("assets/index.html"), trace=calls.append)
+
+    assert calls == ["loading-full-app", "assets/index.html"]

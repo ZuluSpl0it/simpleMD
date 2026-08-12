@@ -35,6 +35,12 @@ def start_webview(window, callback, data_directory: Path) -> None:
     )
 
 
+def navigate_to_app(window, app_url: Path, trace=None) -> None:
+    trace = trace or (lambda _event: None)
+    trace("loading-full-app")
+    window.load_url(str(app_url))
+
+
 def run() -> None:
     asset_root = Path(__file__).with_name("assets")
     executable_root = Path(sys.executable).parent
@@ -58,13 +64,17 @@ def run() -> None:
     trace("workspace-restored")
     window = webview.create_window(
         "Flatnotes",
-        str(asset_root / "index.html"),
+        str(asset_root / "loading.html"),
         js_api=bridge,
     )
     bridge.window = window
     trace("window-configured")
     window.events.before_show += lambda: trace("window-before-show")
-    window.events.shown += lambda: trace("window-shown")
+    def on_shown():
+        trace("window-shown")
+        navigate_to_app(window, asset_root / "index.html", trace=trace)
+
+    window.events.shown += on_shown
 
     def on_loaded():
         trace("window-loaded")

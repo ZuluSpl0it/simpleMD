@@ -15,4 +15,44 @@ describe("tabs", () => {
     tabs.setContent(id, "two");
     expect(tabs.requestClose(id)).toEqual({ requiresConflict: true });
   });
+
+  it("returns to Home without closing open tabs", () => {
+    const tabs = createTabs();
+    const id = tabs.open({ content: "one" });
+
+    tabs.showHome();
+
+    expect(tabs.active.value).toBeUndefined();
+    expect(tabs.byId(id).content).toBe("one");
+  });
+
+  it("selects an existing tab without changing its content", () => {
+    const tabs = createTabs();
+    const first = tabs.open({ title: "first", content: "one" });
+    const second = tabs.open({ title: "second", content: "two" });
+
+    tabs.select(first);
+
+    expect(tabs.active.value.id).toBe(first);
+    expect(tabs.byId(second).content).toBe("two");
+  });
+
+  it("replaces a tab from disk and bumps its editor revision", () => {
+    const tabs = createTabs();
+    const id = tabs.open({ path: "C:/note.md", content: "old", editing: true });
+    tabs.setContent(id, "unsaved");
+    const previousRevision = tabs.byId(id).editorRevision;
+
+    tabs.replace(id, { content: "new", modified_ns: "42", content_hash: "hash" });
+
+    expect(tabs.byId(id)).toMatchObject({
+      content: "new",
+      savedContent: "new",
+      dirty: false,
+      modified_ns: "42",
+      content_hash: "hash",
+      externalState: null,
+    });
+    expect(tabs.byId(id).editorRevision).toBe(previousRevision + 1);
+  });
 });

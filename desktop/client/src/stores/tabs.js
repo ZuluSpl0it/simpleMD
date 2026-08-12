@@ -19,6 +19,7 @@ export function createTabs() {
       content_hash: document.content_hash || null,
       mode: document.mode || "markdown",
       editing: document.editing ?? false,
+      editorRevision: 0,
     });
     activeId.value = id;
     return id;
@@ -29,6 +30,27 @@ export function createTabs() {
     tab.content = content;
     tab.dirty = tab.content !== tab.savedContent;
   }
+  function replace(id, document) {
+    const tab = byId(id);
+    if (!tab) return;
+    const content = document.content || "";
+    Object.assign(tab, {
+      content,
+      savedContent: content,
+      dirty: false,
+      fingerprint: document.content_hash || null,
+      modified_ns: document.modified_ns || 0,
+      content_hash: document.content_hash || null,
+      externalState: null,
+      editorRevision: tab.editorRevision + 1,
+    });
+  }
+  function showHome() {
+    activeId.value = null;
+  }
+  function select(id) {
+    if (byId(id)) activeId.value = id;
+  }
   function requestClose(id) {
     const tab = byId(id);
     if (tab?.dirty) return { requiresConflict: true };
@@ -36,5 +58,5 @@ export function createTabs() {
     activeId.value = items.at(-1)?.id || null;
     return { requiresConflict: false };
   }
-  return { items, activeId, byId, open, setContent, requestClose, active: computed(() => byId(activeId.value)) };
+  return { items, activeId, byId, open, select, setContent, replace, showHome, requestClose, active: computed(() => byId(activeId.value)) };
 }

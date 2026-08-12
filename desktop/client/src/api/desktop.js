@@ -5,6 +5,8 @@ const ready = new Promise((resolve) => {
 const call = (name, ...args) => ready.then((bridge) => bridge[name](...args));
 
 export const searchWorkspace = (term) => call("search_workspace", term);
+export const rebuildIndex = () => call("rebuild_index");
+export const getIndexStatus = () => call("get_index_status");
 export const openMarkdown = () => call("open_markdown");
 export const selectWorkspace = () => call("select_workspace");
 export const saveTab = (tab) => call("save_tab", tab);
@@ -16,3 +18,5 @@ export const createWorkspaceNote = (title, content) => call("create_workspace_no
 export const renameWorkspaceNote = (title, newTitle) => call("rename_workspace_note", title, newTitle);
 export const deleteWorkspaceNote = (title) => call("delete_workspace_note", title);
 export const startupEvent = (event) => call("startup_event", event);
+export const getTheme = () => call("get_theme");
+export const setTheme = (theme) => call("set_theme", theme);

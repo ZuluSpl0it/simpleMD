@@ -1,4 +1,5 @@
 from pathlib import Path
+from threading import Lock, RLock, Thread
 
 from .files import FileService
 from .settings import SettingsStore
@@ -7,15 +8,29 @@ from .watcher import Fingerprint, changed_since
 
 
 class DesktopBridge:
-    def __init__(self, window, file_service: FileService, settings=None, workspace=None, trace=None):
+    def __init__(self, window, file_service: FileService, settings=None, workspace=None, trace=None, thread_factory=None):
         self.window = window
         self.file_service = file_service
         self.settings = settings
         self.workspace = workspace
         self.trace = trace or (lambda _event: None)
+        self._thread_factory = thread_factory or Thread
+        self._index_state_lock = RLock()
+        self._index_operation_lock = Lock()
+        self._index_generation = 0
+        self._indexing = False
+        self._index_error = None
 
     def startup_event(self, event: str) -> None:
         self.trace(event)
+
+    def get_theme(self) -> str:
+        return self.settings.load().theme if self.settings is not None else "dark"
+
+    def set_theme(self, theme: str) -> str:
+        if self.settings is None:
+            return "dark"
+        return self.settings.save_theme(theme).theme
 
     def open_markdown(self) -> dict | None:
         import webview
@@ -73,7 +88,7 @@ class DesktopBridge:
     def load_workspace(self) -> dict | None:
         result = self.restore_workspace()
         if result and self.workspace:
-            self.workspace.rebuild()
+            self._queue_workspace_rebuild(self.workspace)
         return result
 
     def restore_workspace(self) -> dict | None:
@@ -89,50 +104,154 @@ class DesktopBridge:
             root = Path(saved).resolve()
         if not root.is_dir():
             return {"workspace": None, "error": "Saved workspace folder is unavailable."}
-        self.workspace = WorkspaceService(root, self.settings.data_directory / "index")
+        with self._index_state_lock:
+            self.workspace = WorkspaceService(root, self.settings.data_directory / "index")
+            self._index_generation += 1
+            self._indexing = True
+            self._index_error = None
         return {"workspace": str(root)}
 
     def _set_workspace(self, root: Path, index_dir: Path) -> dict:
-        self.workspace = WorkspaceService(root, index_dir)
-        self.workspace.rebuild()
+        workspace = WorkspaceService(root, index_dir)
+        with self._index_state_lock:
+            self.workspace = workspace
+            self._queue_workspace_rebuild_locked(workspace)
         return {"workspace": str(root)}
 
     def _refresh_workspace_for(self, path: Path) -> None:
-        if self.workspace and self.workspace.root in path.resolve().parents:
-            self.workspace.rebuild()
+        with self._index_state_lock:
+            workspace = self.workspace
+            if workspace and workspace.root in path.resolve().parents:
+                self._queue_workspace_rebuild_locked(workspace)
 
     def search_workspace(self, term: str) -> list[dict]:
-        if self.workspace is None:
-            return []
-        return [{"title": result.title, "path": str(result.path)} for result in self.workspace.search(term)]
+        with self._index_operation_lock:
+            with self._index_state_lock:
+                if self.workspace is None or self._indexing:
+                    return []
+                workspace = self.workspace
+                generation = self._index_generation
+            results = [{"title": result.title, "path": str(result.path)} for result in workspace.search(term)]
+            with self._index_state_lock:
+                if generation != self._index_generation or workspace is not self.workspace:
+                    return []
+            return results
+
+    def rebuild_index(self) -> dict:
+        with self._index_operation_lock:
+            with self._index_state_lock:
+                if self.workspace is None:
+                    return {"workspace": None, "error": "Select a workspace first."}
+                workspace = self.workspace
+                self._index_generation += 1
+                generation = self._index_generation
+                self._indexing = True
+                self._index_error = None
+            try:
+                workspace.rebuild_index()
+            except Exception as error:
+                with self._index_state_lock:
+                    if generation == self._index_generation:
+                        self._indexing = False
+                        self._index_error = str(error)
+                raise
+            with self._index_state_lock:
+                if generation == self._index_generation:
+                    self._indexing = False
+            return {"workspace": str(workspace.root)}
+
+    def get_index_status(self) -> dict:
+        with self._index_state_lock:
+            return {
+                "workspace": str(self.workspace.root) if self.workspace else None,
+                "indexing": self._indexing,
+                "error": self._index_error,
+            }
+
+    def rebuild_workspace_if_current(self, workspace) -> bool:
+        """Run the delayed startup rebuild only if its workspace is still active."""
+        with self._index_state_lock:
+            if workspace is not self.workspace:
+                return False
+            self._index_generation += 1
+            generation = self._index_generation
+            self._indexing = True
+            self._index_error = None
+        self._run_index_rebuild(workspace, generation)
+        return True
+
+    def _queue_workspace_rebuild(self, workspace) -> bool:
+        with self._index_state_lock:
+            if workspace is not self.workspace:
+                return False
+            self._queue_workspace_rebuild_locked(workspace)
+            return True
+
+    def _queue_workspace_rebuild_locked(self, workspace) -> None:
+        self._index_generation += 1
+        generation = self._index_generation
+        self._indexing = True
+        self._index_error = None
+        thread = self._thread_factory(
+            target=self._run_index_rebuild,
+            args=(workspace, generation),
+            daemon=True,
+        )
+        thread.start()
+
+    def _run_index_rebuild(self, workspace, generation: int) -> None:
+        with self._index_operation_lock:
+            with self._index_state_lock:
+                if generation != self._index_generation:
+                    return
+            error = None
+            try:
+                workspace.rebuild()
+            except Exception as caught:
+                error = caught
+            with self._index_state_lock:
+                if generation != self._index_generation:
+                    return
+                self._indexing = False
+                self._index_error = str(error) if error else None
 
     def get_workspace(self) -> str | None:
-        return str(self.workspace.root) if self.workspace else None
+        with self._index_state_lock:
+            return str(self.workspace.root) if self.workspace else None
 
     def create_workspace_note(self, title: str, content: str) -> dict:
-        if self.workspace is None:
-            raise ValueError("Select a workspace first.")
-        path = self.workspace.create(title, content)
+        with self._index_operation_lock:
+            with self._index_state_lock:
+                workspace = self.workspace
+            if workspace is None:
+                raise ValueError("Select a workspace first.")
+            path = workspace.create(title, content)
         document = self.file_service.open_external(path)
         payload = self._document_payload(document)
         payload["kind"] = "workspace"
-        payload["title"] = self.workspace.title_for(path)
+        payload["title"] = workspace.title_for(path)
         return payload
 
     def rename_workspace_note(self, title: str, new_title: str) -> dict:
-        if self.workspace is None:
-            raise ValueError("Select a workspace first.")
-        path = self.workspace.rename(title, new_title)
+        with self._index_operation_lock:
+            with self._index_state_lock:
+                workspace = self.workspace
+            if workspace is None:
+                raise ValueError("Select a workspace first.")
+            path = workspace.rename(title, new_title)
         document = self.file_service.open_external(path)
         payload = self._document_payload(document)
         payload["kind"] = "workspace"
-        payload["title"] = self.workspace.title_for(path)
+        payload["title"] = workspace.title_for(path)
         return payload
 
     def delete_workspace_note(self, title: str) -> None:
-        if self.workspace is None:
-            raise ValueError("Select a workspace first.")
-        self.workspace.delete(title)
+        with self._index_operation_lock:
+            with self._index_state_lock:
+                workspace = self.workspace
+            if workspace is None:
+                raise ValueError("Select a workspace first.")
+            workspace.delete(title)
 
     def check_file(self, tab: dict) -> dict:
         path = Path(tab["path"])

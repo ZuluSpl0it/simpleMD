@@ -9,6 +9,10 @@ Set-ExecutionPolicy -Scope Process Bypass
 
 Output: `dist\Flatnotes\Flatnotes.exe` with a writable `data` directory beside it. The system WebView2 Runtime is required; the app must show its official install link when that runtime is unavailable.
 
+Close Flatnotes before rebuilding. The build now stages PyInstaller output in
+`dist\.flatnotes-build`, then replaces only the executable and `_internal`
+runtime files. Existing `data` and `workspace` contents are preserved.
+
 ## Startup diagnostics
 
 The packaged app writes one timestamped trace per launch under

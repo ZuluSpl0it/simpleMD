@@ -205,6 +205,33 @@ window.pywebview.api.startup_event("frontend-mounted");
 Use that event for profiling and user-facing readiness, not `shown` or the
 return from `webview.start()`.
 
+### Right-click menus are disabled by default
+
+pywebview's WebView2 backend maps its `debug` flag to WebView2's
+`AreDefaultContextMenusEnabled` setting. With the normal production default
+(`debug=False`), text selection and Ctrl+C/Ctrl+V/Ctrl+X can work while a
+right-click menu appears to do nothing.
+
+If the app needs the native Cut/Copy/Paste menu, enable the WebView2 default
+context menu but keep developer tools closed:
+
+```python
+webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
+webview.start(
+    callback,
+    window,
+    debug=True,
+    private_mode=True,
+    http_server=True,
+)
+```
+
+This is a pywebview quirk: `debug=True` controls more than logging. Verify the
+result on the target backend and pywebview version. Do not expose developer
+tools accidentally; explicitly set `OPEN_DEVTOOLS_IN_DEBUG` to `False` for a
+production build. `text_select=True` is a separate window option and is still
+needed when the app wants users to select rendered document text.
+
 ## Startup architecture that avoids the slow path
 
 Recommended sequence:
@@ -254,6 +281,8 @@ navigation.
 - Do not use `webview-start-returned` as the startup-success metric.
 - Do not assume a `file:///` URL fixes a local-server problem without testing
   module loading under WebView2.
+- Do not assume clipboard shortcuts imply that the native right-click context
+  menu is enabled; configure WebView2's default context menu explicitly.
 - Do not patch pywebview's installed package as the first application fix.
 - Do not draw conclusions from one lucky fast launch.
 - Do not treat an HTTP 200 for `loading.html` as proof that the app is ready;

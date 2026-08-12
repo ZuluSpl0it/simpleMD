@@ -9,6 +9,20 @@ class FakeWindow:
         return self.result
 
 
+class FakeThread:
+    created = []
+
+    def __init__(self, target, args, daemon):
+        self.target = target
+        self.args = args
+        self.daemon = daemon
+        self.started = False
+        type(self).created.append(self)
+
+    def start(self):
+        self.started = True
+
+
 def test_frontend_can_record_a_startup_event():
     from flatnotes_desktop.bridge import DesktopBridge
     from flatnotes_desktop.files import FileService
@@ -19,6 +33,18 @@ def test_frontend_can_record_a_startup_event():
     bridge.startup_event("frontend-mounted")
 
     assert events == ["frontend-mounted"]
+
+
+def test_bridge_reads_and_changes_theme(tmp_path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+    from flatnotes_desktop.settings import SettingsStore
+
+    bridge = DesktopBridge(None, FileService(), settings=SettingsStore(tmp_path / "data"))
+
+    assert bridge.get_theme() == "dark"
+    assert bridge.set_theme("light") == "light"
+    assert bridge.get_theme() == "light"
 
 
 def test_bridge_state_objects_are_not_recursively_exposed(tmp_path):
@@ -104,6 +130,64 @@ def test_select_workspace_persists_folder(tmp_path: Path):
     assert result["workspace"] == str(workspace.resolve())
 
 
+def test_select_workspace_returns_before_background_index_rebuild(tmp_path: Path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.settings import SettingsStore
+    from flatnotes_desktop.files import FileService
+
+    FakeThread.created = []
+    workspace = tmp_path / "notes"
+    workspace.mkdir()
+    bridge = DesktopBridge(
+        FakeWindow((str(workspace),)),
+        FileService(),
+        settings=SettingsStore(tmp_path / "data"),
+        thread_factory=FakeThread,
+    )
+
+    result = bridge.select_workspace()
+
+    assert result["workspace"] == str(workspace.resolve())
+    assert bridge.get_index_status()["indexing"] is True
+    assert FakeThread.created[0].started is True
+    assert bridge.search_workspace("anything") == []
+
+    FakeThread.created[0].target(*FakeThread.created[0].args)
+
+    assert bridge.get_index_status() == {
+        "workspace": str(workspace.resolve()),
+        "indexing": False,
+        "error": None,
+    }
+
+
+def test_delayed_rebuild_skips_workspace_that_is_no_longer_current(tmp_path: Path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+    from flatnotes_desktop.settings import SettingsStore
+    from flatnotes_desktop.workspace import WorkspaceService
+
+    FakeThread.created = []
+    old_root = tmp_path / "old"
+    new_root = tmp_path / "new"
+    old_root.mkdir()
+    new_root.mkdir()
+    settings = SettingsStore(tmp_path / "data")
+    settings.save_workspace(str(new_root))
+    old_service = WorkspaceService(old_root, tmp_path / "index")
+    bridge = DesktopBridge(
+        FakeWindow(None),
+        FileService(),
+        settings=settings,
+        workspace=old_service,
+        thread_factory=FakeThread,
+    )
+    bridge.restore_workspace()
+
+    assert bridge.rebuild_workspace_if_current(old_service) is False
+    assert FakeThread.created == []
+
+
 def test_search_workspace_returns_relative_result(tmp_path: Path):
     from flatnotes_desktop.bridge import DesktopBridge
     from flatnotes_desktop.files import FileService
@@ -116,6 +200,38 @@ def test_search_workspace_returns_relative_result(tmp_path: Path):
     service.rebuild()
     bridge = DesktopBridge(FakeWindow(None), FileService(), workspace=service)
 
+    assert bridge.search_workspace("release")[0]["title"] == "plan"
+
+
+def test_rebuild_index_requires_a_selected_workspace(tmp_path: Path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+
+    bridge = DesktopBridge(FakeWindow(None), FileService())
+
+    assert bridge.rebuild_index() == {
+        "workspace": None,
+        "error": "Select a workspace first.",
+    }
+
+
+def test_rebuild_index_rebuilds_the_selected_workspace(tmp_path: Path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+    from flatnotes_desktop.workspace import WorkspaceService
+
+    workspace = tmp_path / "notes"
+    workspace.mkdir()
+    (workspace / "plan.md").write_text("release", encoding="utf-8")
+    service = WorkspaceService(workspace, tmp_path / "index")
+    service.rebuild()
+    (service.index_directory / "stale.marker").write_text("stale", encoding="utf-8")
+    bridge = DesktopBridge(FakeWindow(None), FileService(), workspace=service)
+
+    result = bridge.rebuild_index()
+
+    assert result == {"workspace": str(workspace.resolve())}
+    assert not (service.index_directory / "stale.marker").exists()
     assert bridge.search_workspace("release")[0]["title"] == "plan"
 
 

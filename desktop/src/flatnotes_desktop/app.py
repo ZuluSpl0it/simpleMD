@@ -10,14 +10,15 @@ from .settings import SettingsStore
 from .startup import StartupTrace, startup_trace_path, trace_request, trace_response
 
 
-def schedule_workspace_rebuild(workspace, delay: float = 2.0, timer_factory=Timer, trace=None) -> None:
+def schedule_workspace_rebuild(workspace, delay: float = 2.0, timer_factory=Timer, trace=None, rebuild=None) -> None:
     """Keep Whoosh's first index build away from WebView2 initialization."""
     trace = trace or (lambda _event: None)
+    rebuild_operation = rebuild or workspace.rebuild
 
     def rebuild():
         trace("index-rebuild-started")
         try:
-            workspace.rebuild()
+            rebuild_operation()
         finally:
             trace("index-rebuild-finished")
 
@@ -27,10 +28,15 @@ def schedule_workspace_rebuild(workspace, delay: float = 2.0, timer_factory=Time
 
 
 def start_webview(window, callback, data_directory: Path) -> None:
-    """Start WebView2 with pywebview's local HTTP server and private profile."""
+    """Start WebView2 with native editing menus and a private profile."""
+    # pywebview maps its debug flag to WebView2's default context-menu and
+    # accelerator settings. Keep developer tools closed while restoring the
+    # native Cut/Copy/Paste context menu.
+    webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
     webview.start(
         callback,
         window,
+        debug=True,
         private_mode=True,
         http_server=True,
     )
@@ -56,6 +62,7 @@ def run() -> None:
         "Flatnotes",
         str(asset_root / "loading.html"),
         js_api=bridge,
+        text_select=True,
     )
     bridge.window = window
     window._serializable = False
@@ -67,10 +74,19 @@ def run() -> None:
     window.events.request_sent += lambda request: trace_request(trace, request)
     window.events.response_received += lambda response: trace_response(trace, response)
 
+    startup_rebuild_scheduled = False
+
     def on_loaded():
+        nonlocal startup_rebuild_scheduled
         trace("window-loaded")
-        if bridge.workspace is not None:
-            schedule_workspace_rebuild(bridge.workspace, trace=trace)
+        if bridge.workspace is not None and not startup_rebuild_scheduled:
+            startup_rebuild_scheduled = True
+            startup_workspace = bridge.workspace
+            schedule_workspace_rebuild(
+                startup_workspace,
+                trace=trace,
+                rebuild=lambda: bridge.rebuild_workspace_if_current(startup_workspace),
+            )
             trace("index-rebuild-scheduled")
 
     def startup_callback(_active_window):

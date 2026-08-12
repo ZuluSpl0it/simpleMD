@@ -12,6 +12,7 @@ def test_webview_uses_private_profile(tmp_path: Path, monkeypatch):
 
     assert captured["kwargs"]["private_mode"] is True
     assert captured["kwargs"]["http_server"] is True
+    assert captured["kwargs"]["debug"] is True
     assert "storage_path" not in captured["kwargs"]
 
 
@@ -34,6 +35,28 @@ def test_index_rebuild_is_delayed_until_after_startup():
 
     assert calls[0][0:2] == ("created", 2.0)
     assert calls[1] == ("started", True)
+
+
+def test_delayed_index_rebuild_can_use_a_guarded_callback():
+    from flatnotes_desktop.app import schedule_workspace_rebuild
+
+    calls = []
+
+    class FakeTimer:
+        def __init__(self, delay, function):
+            self.function = function
+            self.daemon = False
+
+        def start(self):
+            self.function()
+
+    schedule_workspace_rebuild(
+        object(),
+        timer_factory=FakeTimer,
+        rebuild=lambda: calls.append("rebuilt"),
+    )
+
+    assert calls == ["rebuilt"]
 
 
 def test_startup_trace_records_timed_events(tmp_path: Path):

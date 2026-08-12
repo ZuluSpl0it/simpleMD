@@ -41,3 +41,39 @@ def test_delete_removes_note_from_search(tmp_path: Path):
     service.delete("plan")
 
     assert service.search("release") == []
+
+
+def test_rebuild_index_removes_stale_index_files(tmp_path: Path):
+    from flatnotes_desktop.workspace import WorkspaceService
+
+    root = tmp_path / "notes"
+    root.mkdir()
+    (root / "plan.md").write_text("release roadmap", encoding="utf-8")
+    service = WorkspaceService(root, tmp_path / "index")
+    service.rebuild()
+
+    stale_file = service.index_directory / "stale.marker"
+    stale_file.write_text("stale", encoding="utf-8")
+    service.rebuild_index()
+
+    assert not stale_file.exists()
+    assert [item.title for item in service.search("release")] == ["plan"]
+
+
+def test_rebuild_index_refreshes_paths_after_an_external_move(tmp_path: Path):
+    from flatnotes_desktop.workspace import WorkspaceService
+
+    root = tmp_path / "notes"
+    root.mkdir()
+    original = root / "plan.md"
+    original.write_text("release roadmap", encoding="utf-8")
+    service = WorkspaceService(root, tmp_path / "index")
+    service.rebuild()
+
+    moved = root / "archive" / "plan.md"
+    moved.parent.mkdir()
+    original.rename(moved)
+    service.rebuild_index()
+
+    result = service.search("release")
+    assert [item.path for item in result] == [moved]

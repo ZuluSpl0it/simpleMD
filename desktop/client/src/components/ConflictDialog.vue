@@ -4,6 +4,7 @@
     <button v-if="actions.includes('reload')" type="button" @click="$emit('resolve', 'reload')">Reload</button>
     <button v-if="actions.includes('overwrite')" type="button" @click="$emit('resolve', 'overwrite')">Overwrite</button>
     <button v-if="actions.includes('saveAs')" type="button" @click="$emit('resolve', 'saveAs')">Save As</button>
+    <button type="button" @click="$emit('resolve', 'cancel')">Cancel</button>
   </div>
 </template>
 

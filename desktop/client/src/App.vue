@@ -1,7 +1,8 @@
 <template>
-  <TabBar :tabs="tabs" :active="tabs.active.value" @new-tab="newTab" @close-tab="closeTab" @toggle-edit="toggleEdit" @save="saveActive" @save-as="saveActiveAs" @rename="renameActive" @delete="deleteActive" />
-  <HomeView v-if="!tabs.active.value" :workspace="workspace" @select-workspace="selectWorkspace" @open-markdown="openMarkdown" @open-result="openResult" />
-  <MarkdownEditor v-else :key="`${tabs.active.value.id}-${tabs.active.value.mode}-${tabs.active.value.editing}`" :content="tabs.active.value.content" :mode="tabs.active.value.mode" :editing="tabs.active.value.editing" @change="(content) => tabs.setContent(tabs.activeId.value, content)" />
+  <TabBar :tabs="tabs" :active="tabs.active.value" :theme="theme" @new-tab="newTab" @home="goHome" @toggle-theme="toggleTheme" @close-tab="closeTab" @toggle-edit="toggleEdit" @save="saveActive" @save-as="saveActiveAs" @rename="renameActive" @delete="deleteActive" />
+  <FindBar v-if="findOpen && tabs.active.value" :query="findQuery" :match-count="findCount" :active-match="findIndex" @update:query="setFindQuery" @previous="moveFind(-1)" @next="moveFind(1)" @close="closeFind" />
+  <HomeView v-if="!tabs.active.value" :workspace="workspace" :index-busy="indexBusy" :index-message="indexMessage" :index-error="indexError" @select-workspace="selectWorkspace" @rebuild-index="rebuildSearchIndex" @open-markdown="openMarkdown" @open-result="openResult" />
+  <MarkdownEditor v-else :key="`${tabs.active.value.id}-${tabs.active.value.mode}-${tabs.active.value.editing}-${tabs.active.value.editorRevision}-${theme}`" :content="tabs.active.value.content" :mode="tabs.active.value.mode" :editing="tabs.active.value.editing" :theme="theme" :find-query="findQuery" :find-index="findIndex" @change="(content) => tabs.setContent(tabs.activeId.value, content)" @find-count="setFindCount" />
   <ConflictDialog v-if="conflictTab" :visible="true" :tab="conflictTab" @resolve="resolveConflict" />
   <CloseDialog v-if="pendingCloseTab" :tab="pendingCloseTab" @resolve="resolveClose" />
 </template>
@@ -9,26 +10,81 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from "vue";
 import HomeView from "./views/HomeView.vue";
-import { checkFile, createWorkspaceNote, deleteWorkspaceNote, getWorkspace, openDroppedPath, openMarkdown as chooseMarkdown, renameWorkspaceNote, saveAs, saveTab, selectWorkspace as chooseWorkspace, startupEvent } from "./api/desktop.js";
+import FindBar from "./components/FindBar.vue";
+import { checkFile, createWorkspaceNote, deleteWorkspaceNote, getIndexStatus, getTheme, getWorkspace, openDroppedPath, openMarkdown as chooseMarkdown, rebuildIndex, renameWorkspaceNote, saveAs, saveTab, selectWorkspace as chooseWorkspace, setTheme, startupEvent } from "./api/desktop.js";
 import TabBar from "./components/TabBar.vue";
 import MarkdownEditor from "./components/MarkdownEditor.vue";
 import ConflictDialog from "./components/ConflictDialog.vue";
 import CloseDialog from "./components/CloseDialog.vue";
 import { createTabs } from "./stores/tabs.js";
+import { classifyDocument } from "./documents.js";
 
 const workspace = ref(null);
 const tabs = createTabs();
 const conflictTab = ref(null);
 const pendingCloseTab = ref(null);
+const findOpen = ref(false);
+const findQuery = ref("");
+const findIndex = ref(0);
+const findCount = ref(0);
+const theme = ref("dark");
+const indexBusy = ref(false);
+const indexMessage = ref("");
+const indexError = ref(false);
+let wasIndexing = false;
 let pollTimer;
 function newTab() { tabs.open({ kind: "workspace", title: "Untitled", content: "", editing: true }); }
 function toggleEdit() {
   const tab = tabs.active.value;
   if (tab) tab.editing = !tab.editing;
 }
+function goHome() {
+  closeFind();
+  tabs.showHome();
+}
+function openFind() {
+  if (!tabs.active.value) return;
+  findOpen.value = true;
+}
+function closeFind() {
+  findOpen.value = false;
+  findQuery.value = "";
+  findIndex.value = 0;
+  findCount.value = 0;
+}
+function setFindQuery(query) {
+  findQuery.value = query;
+  findIndex.value = 0;
+}
+function setFindCount(count) {
+  findCount.value = count;
+  if (!count) findIndex.value = 0;
+  else if (findIndex.value >= count) findIndex.value = count - 1;
+}
+function moveFind(delta) {
+  if (!findCount.value) return;
+  findIndex.value = (findIndex.value + delta + findCount.value) % findCount.value;
+}
+function handleShortcut(event) {
+  if ((event.ctrlKey || event.metaKey) && event.code === "KeyF" && tabs.active.value) {
+    event.preventDefault();
+    event.stopPropagation();
+    openFind();
+  } else if ((event.ctrlKey || event.metaKey) && event.code === "KeyH" && tabs.active.value) {
+    event.preventDefault();
+    event.stopPropagation();
+    goHome();
+  } else if (event.key === "Escape" && findOpen.value) {
+    closeFind();
+  }
+}
+async function toggleTheme() {
+  theme.value = await setTheme(theme.value === "dark" ? "light" : "dark");
+  document.documentElement.dataset.theme = theme.value;
+}
 async function openMarkdown() {
   const document = await chooseMarkdown();
-  if (document) tabs.open(document);
+  if (document) tabs.open(classifyDocument(document, workspace.value));
 }
 async function openResult(result) {
   const document = await openDroppedPath(result.path);
@@ -59,8 +115,19 @@ async function renameActive() {
   const tab = tabs.active.value;
   const title = window.prompt("New note title", tab.title);
   if (!title || title === tab.title) return;
-  const renamed = await renameWorkspaceNote(tab.title, title);
-  Object.assign(tab, { title: renamed.title, path: renamed.path, modified_ns: renamed.modified_ns, content_hash: renamed.content_hash });
+  tab.renaming = true;
+  try {
+    const renamed = await renameWorkspaceNote(tab.title, title);
+    Object.assign(tab, {
+      title: renamed.title,
+      path: renamed.path,
+      modified_ns: renamed.modified_ns,
+      content_hash: renamed.content_hash,
+      externalState: null,
+    });
+  } finally {
+    tab.renaming = false;
+  }
 }
 async function deleteActive() {
   const tab = tabs.active.value;
@@ -92,16 +159,22 @@ async function resolveClose(action) {
 }
 async function pollActiveFile() {
   const tab = tabs.active.value;
-  if (!tab?.path || tab.externalState) return;
+  if (!tab?.path || tab.externalState || tab.renaming) return;
+  const pathBeingChecked = tab.path;
   const status = await checkFile(tab);
+  if (tab.renaming || tab.path !== pathBeingChecked || tabs.active.value !== tab) return;
   if (status.state !== "clean") { tab.externalState = status.state; conflictTab.value = tab; }
 }
 async function resolveConflict(action) {
   const tab = conflictTab.value;
   if (!tab) return;
+  if (action === "cancel") {
+    conflictTab.value = null;
+    return;
+  }
   if (action === "reload") {
     const document = await openDroppedPath(tab.path);
-    Object.assign(tab, { content: document.content, savedContent: document.content, modified_ns: document.modified_ns, content_hash: document.content_hash, dirty: false, externalState: null });
+    tabs.replace(tab.id, document);
   } else if (action === "overwrite") {
     await saveTab(tab); tab.dirty = false; tab.externalState = null;
   } else { await saveActiveAs(); tab.externalState = null; }
@@ -110,19 +183,71 @@ async function resolveConflict(action) {
 async function selectWorkspace() {
   try {
     const selected = await chooseWorkspace();
-    if (selected?.workspace) workspace.value = selected.workspace;
+    if (selected?.workspace) {
+      workspace.value = selected.workspace;
+      indexBusy.value = true;
+      wasIndexing = true;
+      indexMessage.value = "Indexing workspace…";
+      indexError.value = false;
+      await pollIndexStatus();
+    }
   } catch (error) { window.alert(`Could not select workspace: ${error.message}`); }
+}
+async function pollIndexStatus() {
+  try {
+    const status = await getIndexStatus();
+    const normalizeWorkspace = (value) => String(value || "").replaceAll("\\", "/").replace(/\/+$/, "").toLowerCase();
+    if (status?.workspace && workspace.value && normalizeWorkspace(status.workspace) !== normalizeWorkspace(workspace.value)) return;
+    if (status.indexing) {
+      indexBusy.value = true;
+      wasIndexing = true;
+      indexMessage.value = "Indexing workspace…";
+      indexError.value = false;
+    } else if (wasIndexing || indexBusy.value) {
+      indexBusy.value = false;
+      wasIndexing = false;
+      indexError.value = Boolean(status.error);
+      indexMessage.value = status.error ? `Could not index workspace: ${status.error}` : "Search index ready.";
+    }
+  } catch (error) {
+    indexBusy.value = false;
+    wasIndexing = false;
+    indexError.value = true;
+    indexMessage.value = `Could not check index status: ${error.message}`;
+  }
+}
+async function rebuildSearchIndex() {
+  if (indexBusy.value || !workspace.value) return;
+  indexBusy.value = true;
+  wasIndexing = true;
+  indexMessage.value = "";
+  indexError.value = false;
+  try {
+    const result = await rebuildIndex();
+    if (result?.error) throw new Error(result.error);
+    indexMessage.value = "Search index rebuilt.";
+    wasIndexing = false;
+  } catch (error) {
+    indexError.value = true;
+    indexMessage.value = `Could not rebuild search index: ${error.message}`;
+  } finally {
+    indexBusy.value = false;
+  }
 }
 function handleDrop(event) {
   const document = event.detail;
   if (document?.kind === "external") tabs.open(document);
 }
 onMounted(async () => {
+  window.addEventListener("keydown", handleShortcut, true);
   await startupEvent("frontend-mounted");
+  theme.value = await getTheme();
+  document.documentElement.dataset.theme = theme.value;
   workspace.value = await getWorkspace();
+  await pollIndexStatus();
   await startupEvent("frontend-workspace-read");
   window.addEventListener("flatnotes-drop", handleDrop);
-  pollTimer = window.setInterval(pollActiveFile, 1000);
+  pollTimer = window.setInterval(() => { pollActiveFile(); pollIndexStatus(); }, 1000);
 });
-onUnmounted(() => { window.clearInterval(pollTimer); window.removeEventListener("flatnotes-drop", handleDrop); });
+onUnmounted(() => { window.clearInterval(pollTimer); window.removeEventListener("flatnotes-drop", handleDrop); window.removeEventListener("keydown", handleShortcut, true); });
 </script>

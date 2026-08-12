@@ -56,6 +56,28 @@ object serializer or dependency-injection container. See the pywebview
 [API](https://pywebview.flowrl.com/api/) and
 [architecture](https://pywebview.idepy.com/en/guide/architecture) references.
 
+For Windows native text-editing menus, pywebview's WebView2 backend requires
+its debug flag to be enabled because that flag controls
+`AreDefaultContextMenusEnabled`. Enable the context menu while suppressing
+developer tools explicitly:
+
+```python
+webview.settings["OPEN_DEVTOOLS_IN_DEBUG"] = False
+webview.start(
+    callback,
+    window,
+    debug=True,
+    private_mode=True,
+    http_server=True,
+)
+```
+
+Also pass `text_select=True` to `webview.create_window` when rendered document
+text should be selectable. These settings are independent: Ctrl+C/Ctrl+V/Ctrl+X
+may work even when right-click Cut/Copy/Paste is disabled. Test both behaviors
+in the packaged WebView2 build, and never leave developer tools enabled by
+accident in a release build.
+
 Use this design when:
 
 - the service is lightweight and local;
@@ -365,6 +387,8 @@ For a Python shell built with PyInstaller:
 - include a Node/Go/Rust sidecar binary when applicable;
 - preserve the sidecar executable name and relative location;
 - keep writable data outside the bundled archive;
+- build PyInstaller output into a staging directory, then replace only the
+  executable/runtime tree so user data is not deleted;
 - set the working directory explicitly;
 - avoid relying on `PATH`, a global Python, Node, Go, or Rust installation;
 - build on the target architecture (normally Windows x64);
@@ -456,5 +480,9 @@ Before shipping a converted app, require:
 - Do not assume a child process is ready because it has a PID.
 - Do not rely on global Node/Python/Go/Rust installations.
 - Do not perform indexing, scans, or migrations before the first paint.
+- Do not assume `text_select=True` alone enables the native right-click menu;
+  configure WebView2's default context menus through pywebview as above.
 - Do not use `webview.start()` return as the startup metric.
 - Do not ship without a missing-WebView2 error path and diagnostic logs.
+- Do not let a rebuild recursively delete the live distribution directory
+  while it contains user data; close the app and use a staging output.

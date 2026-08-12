@@ -1,3 +1,4 @@
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -42,6 +43,14 @@ class WorkspaceService:
                 tags=" ".join(self._tags(content)),
             )
         writer.commit()
+
+    def rebuild_index(self) -> None:
+        """Delete the current Whoosh index and rebuild it from workspace files."""
+        if self.index_directory.is_dir():
+            shutil.rmtree(self.index_directory)
+        elif self.index_directory.exists():
+            self.index_directory.unlink()
+        self.rebuild()
 
     def search(self, term: str) -> list[SearchResult]:
         index = open_dir(self.index_directory)

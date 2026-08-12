@@ -8,10 +8,6 @@
 
 **Tech Stack:** Python 3.13, pywebview 6.2.1, pythonnet 3.1.0, WebView2, Vue/Vite, PyInstaller, pytest, PowerShell.
 
-**Status:** Executed. The checklist below is the original handoff; the
-execution record at the end is authoritative for completed experiments and
-the selected fix.
-
 ---
 
 ## Agent handoff
@@ -92,7 +88,9 @@ Do not modify `.venv/Lib/site-packages/webview` as an application fix. Do not ch
 **Files:**
 
 - Modify: `desktop/src/flatnotes_desktop/startup.py`
+
 - Modify: `desktop/src/flatnotes_desktop/app.py`
+
 - Test: `desktop/tests/test_app.py`
 
 - [ ] **Step 1: Write failing tests for unique trace paths and lifecycle formatting**
@@ -397,8 +395,11 @@ Copy-Item .\startup-profile.csv .\startup-profile-file-url.csv
 Expected functional checks for every run:
 
 - Vue interface renders, not only splash.
+
 - CSS and JavaScript assets load under `file:///`.
+
 - Python bridge calls succeed.
+
 - Trace contains no `http://127.0.0.1` requests.
 
 - [ ] **Step 6: Apply decision gate**
@@ -685,6 +686,7 @@ Otherwise restore experiment C before Task 6.
 **Files:**
 
 - Modify experimentally: `desktop/pyproject.toml`
+
 - Regenerate experimentally: `desktop/uv.lock`
 
 - [ ] **Step 1: Record current runtime baseline**
@@ -768,11 +770,17 @@ Expected each time: 10/10 success, no launch above 3 seconds, p95 under 3 second
 Verify:
 
 - Splash appears without blank window.
+
 - Home view renders.
+
 - Python bridge returns workspace.
+
 - Open, Save, Save As, and workspace search work.
+
 - Closing app exits parent process and local asset server, if used.
+
 - No stale listener remains on loopback port after exit.
+
 - One workspace index rebuild occurs per launch.
 
 - [ ] **Step 5: Document confirmed cause and measured result**
@@ -780,10 +788,15 @@ Verify:
 Add a short `Startup diagnostics` section to `desktop/README.md` containing:
 
 - confirmed failing boundary;
+
 - selected fix;
+
 - baseline median/p95/failure count;
+
 - fixed median/p95/failure count;
+
 - trace directory: `data/startup-logs/`;
+
 - profiler command: `scripts\profile_startup.ps1`.
 
 - [ ] **Step 6: Commit final verification documentation**
@@ -800,24 +813,3 @@ git commit -m "docs: record Windows startup diagnosis"
 - Stop if profiler cannot distinguish its own Flatnotes process from an existing instance.
 - Stop if `file:///` mode breaks Python bridge or Vite assets; record that result rather than masking it with unrelated changes.
 - Do not call issue fixed from one fast launch.
-
-## Execution record (2026-08-12)
-
-The experiments identified a fourth mechanism before the ready-bound server
-was needed: pywebview's bridge reflection was recursively walking internal
-service objects. Marking those objects and the window non-serializable reduced
-the reflected surface from roughly 369 functions to the intended 15 bridge
-methods. The duplicate splash meta-refresh was removed as a supporting fix.
-
-Results copied from the Windows build in `C:\src`:
-
-- File-URL experiment: 0/10 launches reached `frontend-mounted`; reverted.
-- Single-navigation experiment: 9/10 launches succeeded, 1 timeout; retained.
-- Bridge-exposure fix: 10/10 launches succeeded at 1.452–1.523 seconds
-  (p95 1.523 seconds); retained.
-- A custom ready-bound asset server and Python 3.12 matrix were not pursued
-  because the bridge fix met the startup threshold and HTTP request timing was
-  already fast.
-
-The implementation is verified by 35 passing Python tests and `git diff
---check`. Windows build/profile results are preserved in `docs/logs/`.

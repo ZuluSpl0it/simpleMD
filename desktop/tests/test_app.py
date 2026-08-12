@@ -45,34 +45,3 @@ def test_startup_trace_records_timed_events(tmp_path: Path):
     content = (tmp_path / "startup.log").read_text(encoding="utf-8")
     assert "+1.250s" in content
     assert "frontend-mounted" in content
-
-
-def test_navigate_to_app_loads_full_frontend_after_splash():
-    from flatnotes_desktop.app import navigate_to_app
-
-    calls = []
-    window = type("Window", (), {"load_url": lambda self, url: calls.append(url)})()
-
-    navigate_to_app(window, Path("assets/index.html"), trace=calls.append)
-
-    assert calls == ["loading-full-app", "assets/index.html"]
-
-
-def test_full_app_navigation_is_delayed_after_splash():
-    from flatnotes_desktop.app import schedule_app_navigation
-
-    calls = []
-
-    class FakeTimer:
-        def __init__(self, delay, function):
-            calls.append(("created", delay, function))
-            self.daemon = False
-
-        def start(self):
-            calls.append(("started", self.daemon))
-
-    window = type("Window", (), {"load_url": lambda self, url: None})()
-    schedule_app_navigation(window, Path("assets/index.html"), timer_factory=FakeTimer)
-
-    assert calls[0][0:2] == ("created", 0.3)
-    assert calls[1] == ("started", True)

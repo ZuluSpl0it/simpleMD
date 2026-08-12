@@ -35,18 +35,6 @@ def start_webview(window, callback, data_directory: Path) -> None:
     )
 
 
-def navigate_to_app(window, app_url: Path, trace=None) -> None:
-    trace = trace or (lambda _event: None)
-    trace("loading-full-app")
-    window.load_url(str(app_url))
-
-
-def schedule_app_navigation(window, app_url: Path, trace=None, timer_factory=Timer) -> None:
-    timer = timer_factory(0.3, lambda: navigate_to_app(window, app_url, trace=trace))
-    timer.daemon = True
-    timer.start()
-
-
 def run() -> None:
     asset_root = Path(__file__).with_name("assets")
     executable_root = Path(sys.executable).parent
@@ -76,11 +64,7 @@ def run() -> None:
     bridge.window = window
     trace("window-configured")
     window.events.before_show += lambda: trace("window-before-show")
-    def on_shown():
-        trace("window-shown")
-        schedule_app_navigation(window, asset_root / "index.html", trace=trace)
-
-    window.events.shown += on_shown
+    window.events.shown += lambda: trace("window-shown")
 
     def on_loaded():
         trace("window-loaded")

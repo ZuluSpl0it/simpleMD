@@ -10,6 +10,7 @@ def test_webview_uses_private_profile(tmp_path: Path, monkeypatch):
     app.start_webview("window", "callback", tmp_path)
 
     assert captured["kwargs"]["private_mode"] is True
+    assert captured["kwargs"]["http_server"] is True
     assert "storage_path" not in captured["kwargs"]
 
 

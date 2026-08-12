@@ -27,11 +27,12 @@ def schedule_workspace_rebuild(workspace, delay: float = 2.0, timer_factory=Time
 
 
 def start_webview(window, callback, data_directory: Path) -> None:
-    """Start WebView2 without a persistent browser profile."""
+    """Start WebView2 with pywebview's local HTTP server and private profile."""
     webview.start(
         callback,
         window,
         private_mode=True,
+        http_server=True,
     )
 
 

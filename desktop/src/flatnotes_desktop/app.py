@@ -41,6 +41,12 @@ def navigate_to_app(window, app_url: Path, trace=None) -> None:
     window.load_url(str(app_url))
 
 
+def schedule_app_navigation(window, app_url: Path, trace=None, timer_factory=Timer) -> None:
+    timer = timer_factory(0.3, lambda: navigate_to_app(window, app_url, trace=trace))
+    timer.daemon = True
+    timer.start()
+
+
 def run() -> None:
     asset_root = Path(__file__).with_name("assets")
     executable_root = Path(sys.executable).parent
@@ -72,7 +78,7 @@ def run() -> None:
     window.events.before_show += lambda: trace("window-before-show")
     def on_shown():
         trace("window-shown")
-        navigate_to_app(window, asset_root / "index.html", trace=trace)
+        schedule_app_navigation(window, asset_root / "index.html", trace=trace)
 
     window.events.shown += on_shown
 

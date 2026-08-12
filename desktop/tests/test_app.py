@@ -1,4 +1,5 @@
 from pathlib import Path
+from datetime import datetime, timezone
 
 
 def test_webview_uses_private_profile(tmp_path: Path, monkeypatch):
@@ -46,3 +47,31 @@ def test_startup_trace_records_timed_events(tmp_path: Path):
     content = (tmp_path / "startup.log").read_text(encoding="utf-8")
     assert "+1.250s" in content
     assert "frontend-mounted" in content
+
+
+def test_startup_trace_path_contains_timestamp_and_process_id(tmp_path: Path):
+    from flatnotes_desktop.startup import startup_trace_path
+
+    path = startup_trace_path(
+        tmp_path,
+        now=datetime(2026, 8, 12, 14, 5, 6, 123456, tzinfo=timezone.utc),
+        process_id=4321,
+    )
+
+    assert path == tmp_path / "startup-logs" / "20260812T140506.123456Z-4321.log"
+
+
+def test_request_and_response_events_include_url_and_status():
+    from flatnotes_desktop.startup import trace_request, trace_response
+
+    events = []
+    request = type("Request", (), {"method": "GET", "url": "http://127.0.0.1:42001/index.html"})()
+    response = type("Response", (), {"status_code": 200, "url": request.url})()
+
+    trace_request(events.append, request)
+    trace_response(events.append, response)
+
+    assert events == [
+        "request:GET:http://127.0.0.1:42001/index.html",
+        "response:200:http://127.0.0.1:42001/index.html",
+    ]

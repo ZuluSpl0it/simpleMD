@@ -6,6 +6,8 @@ from .models import Settings
 
 
 class SettingsStore:
+    _serializable = False
+
     def __init__(self, data_directory: Path):
         self.data_directory = data_directory
         self.path = data_directory / "settings.json"

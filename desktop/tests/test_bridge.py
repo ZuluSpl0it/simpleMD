@@ -21,6 +21,36 @@ def test_frontend_can_record_a_startup_event():
     assert events == ["frontend-mounted"]
 
 
+def test_bridge_state_objects_are_not_recursively_exposed(tmp_path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+    from flatnotes_desktop.settings import SettingsStore
+
+    bridge = DesktopBridge(
+        None,
+        FileService(),
+        settings=SettingsStore(tmp_path / "data"),
+    )
+
+    assert bridge.file_service._serializable is False
+    assert bridge.settings._serializable is False
+
+
+def test_restored_workspace_is_not_recursively_exposed(tmp_path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+    from flatnotes_desktop.settings import SettingsStore
+
+    bridge = DesktopBridge(
+        None,
+        FileService(),
+        settings=SettingsStore(tmp_path / "data"),
+    )
+    bridge.restore_workspace()
+
+    assert bridge.workspace._serializable is False
+
+
 def test_open_dialog_returns_external_document(tmp_path: Path):
     from flatnotes_desktop.bridge import DesktopBridge
     from flatnotes_desktop.files import FileService

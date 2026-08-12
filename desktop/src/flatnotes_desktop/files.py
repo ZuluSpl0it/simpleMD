@@ -8,6 +8,8 @@ from .models import Document
 class FileService:
     """Read and write a user-selected external Markdown file exactly in place."""
 
+    _serializable = False
+
     def open_external(self, path: Path | str) -> Document:
         target = self._existing_markdown(path)
         content = target.read_text(encoding="utf-8")

@@ -7,7 +7,7 @@ import webview
 from .bridge import DesktopBridge
 from .files import FileService
 from .settings import SettingsStore
-from .startup import StartupTrace
+from .startup import StartupTrace, startup_trace_path, trace_request, trace_response
 
 
 def schedule_workspace_rebuild(workspace, delay: float = 2.0, timer_factory=Timer, trace=None) -> None:
@@ -42,12 +42,7 @@ def run() -> None:
     if not getattr(sys, "frozen", False):
         executable_root = Path(__file__).parents[2]
     data_directory = executable_root / "data"
-    trace_path = data_directory / "startup.log"
-    try:
-        trace_path.unlink(missing_ok=True)
-    except OSError:
-        pass
-    trace = StartupTrace(trace_path)
+    trace = StartupTrace(startup_trace_path(data_directory))
     trace("run-entered")
     bridge = DesktopBridge(
         None,
@@ -63,9 +58,14 @@ def run() -> None:
         js_api=bridge,
     )
     bridge.window = window
+    window._serializable = False
     trace("window-configured")
+    window.events.initialized += lambda renderer: trace(f"window-initialized:{renderer}")
+    window.events.before_load += lambda: trace("window-before-load")
     window.events.before_show += lambda: trace("window-before-show")
     window.events.shown += lambda: trace("window-shown")
+    window.events.request_sent += lambda request: trace_request(trace, request)
+    window.events.response_received += lambda response: trace_response(trace, response)
 
     def on_loaded():
         trace("window-loaded")

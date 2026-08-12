@@ -17,6 +17,8 @@ class SearchResult:
 class WorkspaceService:
     """Recursive Markdown workspace backed by portable Whoosh index."""
 
+    _serializable = False
+
     def __init__(self, root: Path, index_directory: Path):
         self.root = root.resolve()
         self.index_directory = index_directory

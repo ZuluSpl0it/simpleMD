@@ -67,6 +67,49 @@ def test_bind_drop_handlers_registers_once_with_default_prevention(monkeypatch):
     }
 
 
+def test_bind_drop_handlers_rebinds_after_navigation_to_a_new_document(monkeypatch):
+    from flatnotes_desktop import app
+
+    class Event:
+        def __init__(self):
+            self.handlers = []
+
+        def __iadd__(self, handler):
+            self.handlers.append(handler)
+            return self
+
+    class Document:
+        def __init__(self):
+            self.events = type("Events", (), {
+                "dragover": Event(),
+                "drop": Event(),
+            })()
+
+    class Dom:
+        def __init__(self):
+            self.document = Document()
+
+    class Window:
+        def __init__(self):
+            self.dom = Dom()
+
+    class Handler:
+        def __init__(self, callback, **options):
+            self.callback = callback
+            self.options = options
+
+    monkeypatch.setattr(app, "DOMEventHandler", Handler)
+    window = Window()
+    first_document = window.dom.document
+    app.bind_drop_handlers(window)
+    window.dom.document = Document()
+    second_document = window.dom.document
+    app.bind_drop_handlers(window)
+
+    assert len(first_document.events.drop.handlers) == 1
+    assert len(second_document.events.drop.handlers) == 1
+
+
 def test_drop_handler_dispatches_ordered_markdown_paths_as_json(tmp_path: Path):
     from flatnotes_desktop import app
 

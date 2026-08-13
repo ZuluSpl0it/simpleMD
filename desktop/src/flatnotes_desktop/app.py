@@ -42,20 +42,21 @@ def make_drop_handler(window):
 
 
 def bind_drop_handlers(window):
-    if getattr(window, "_flatnotes_drop_bound", False):
+    document = window.dom.document
+    if getattr(document, "_flatnotes_drop_bound", False):
         return
-    window.dom.document.events.dragover += DOMEventHandler(
+    document.events.dragover += DOMEventHandler(
         lambda _event: None,
         prevent_default=True,
         stop_propagation=True,
         debounce=250,
     )
-    window.dom.document.events.drop += DOMEventHandler(
+    document.events.drop += DOMEventHandler(
         make_drop_handler(window),
         prevent_default=True,
         stop_propagation=True,
     )
-    window._flatnotes_drop_bound = True
+    document._flatnotes_drop_bound = True
 
 
 def schedule_workspace_rebuild(workspace, delay: float = 2.0, timer_factory=Timer, trace=None, rebuild=None) -> None:

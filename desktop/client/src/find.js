@@ -14,6 +14,24 @@ export function findMatches(text, query) {
   return matches;
 }
 
+export function replaceMatch(text, query, replacement, activeIndex = 0) {
+  const matches = findMatches(text, query);
+  const match = matches[activeIndex];
+  if (!match) return text;
+  return text.slice(0, match.start) + replacement + text.slice(match.end);
+}
+
+export function replaceAllMatches(text, query, replacement) {
+  const matches = findMatches(text, query);
+  if (!matches.length) return text;
+  let result = text;
+  for (let index = matches.length - 1; index >= 0; index -= 1) {
+    const match = matches[index];
+    result = result.slice(0, match.start) + replacement + result.slice(match.end);
+  }
+  return result;
+}
+
 function clearHighlights() {
   if (!globalThis.CSS?.highlights) return;
   globalThis.CSS.highlights.delete("flatnotes-find");

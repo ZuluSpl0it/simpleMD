@@ -1,6 +1,6 @@
 <template>
   <TabBar :tabs="tabs" :active="tabs.active.value" :theme="theme" @new-tab="newTab" @home="goHome" @toggle-theme="toggleTheme" @close-tab="closeTab" @toggle-edit="toggleEdit" @save="saveActive" @save-as="saveActiveAs" @rename="renameActive" @delete="deleteActive" />
-  <FindBar v-if="findOpen && tabs.active.value" :query="findQuery" :match-count="findCount" :active-match="findIndex" @update:query="setFindQuery" @previous="moveFind(-1)" @next="moveFind(1)" @close="closeFind" />
+  <FindBar v-if="findOpen && tabs.active.value" :query="findQuery" :replacement="replacementQuery" :editing="tabs.active.value.editing" :match-count="findCount" :active-match="findIndex" @update:query="setFindQuery" @update:replacement="replacementQuery = $event" @previous="moveFind(-1)" @next="moveFind(1)" @replace="replaceActive" @replace-all="replaceAllActive" @close="closeFind" />
   <HomeView v-if="!tabs.active.value" :workspace="workspace" :index-busy="indexBusy" :index-message="indexMessage" :index-error="indexError" @select-workspace="selectWorkspace" @rebuild-index="rebuildSearchIndex" @open-markdown="openMarkdown" @open-result="openResult" />
   <MarkdownEditor v-else :key="`${tabs.active.value.id}-${tabs.active.value.mode}-${tabs.active.value.editing}-${tabs.active.value.editorRevision}-${theme}`" :content="tabs.active.value.content" :mode="tabs.active.value.mode" :editing="tabs.active.value.editing" :theme="theme" :find-query="findQuery" :find-index="findIndex" @change="(content) => tabs.setContent(tabs.activeId.value, content)" @find-count="setFindCount" />
   <ConflictDialog v-if="conflictTab" :visible="true" :tab="conflictTab" @resolve="resolveConflict" />
@@ -18,6 +18,7 @@ import ConflictDialog from "./components/ConflictDialog.vue";
 import CloseDialog from "./components/CloseDialog.vue";
 import { createTabs } from "./stores/tabs.js";
 import { classifyDocument } from "./documents.js";
+import { replaceAllMatches, replaceMatch } from "./find.js";
 
 const workspace = ref(null);
 const tabs = createTabs();
@@ -25,6 +26,7 @@ const conflictTab = ref(null);
 const pendingCloseTab = ref(null);
 const findOpen = ref(false);
 const findQuery = ref("");
+const replacementQuery = ref("");
 const findIndex = ref(0);
 const findCount = ref(0);
 const theme = ref("dark");
@@ -49,6 +51,7 @@ function openFind() {
 function closeFind() {
   findOpen.value = false;
   findQuery.value = "";
+  replacementQuery.value = "";
   findIndex.value = 0;
   findCount.value = 0;
 }
@@ -64,6 +67,18 @@ function setFindCount(count) {
 function moveFind(delta) {
   if (!findCount.value) return;
   findIndex.value = (findIndex.value + delta + findCount.value) % findCount.value;
+}
+function replaceActive() {
+  const tab = tabs.active.value;
+  if (!tab?.editing || !findQuery.value.trim()) return;
+  const nextContent = replaceMatch(tab.content, findQuery.value, replacementQuery.value, findIndex.value);
+  if (nextContent !== tab.content) tabs.setContent(tab.id, nextContent);
+}
+function replaceAllActive() {
+  const tab = tabs.active.value;
+  if (!tab?.editing || !findQuery.value.trim()) return;
+  const nextContent = replaceAllMatches(tab.content, findQuery.value, replacementQuery.value);
+  if (nextContent !== tab.content) tabs.setContent(tab.id, nextContent);
 }
 function handleShortcut(event) {
   if ((event.ctrlKey || event.metaKey) && event.code === "KeyF" && tabs.active.value) {

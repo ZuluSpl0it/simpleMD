@@ -46,6 +46,7 @@ button:not(.toastui-editor-toolbar-icons):disabled { cursor: default; opacity: .
 .edit-toggle.active { background: #ea580c; border-color: #fb923c; color: #fff; }
 .find-bar { position: fixed; top: 52px; right: 16px; z-index: 20; display: flex; gap: 6px; align-items: center; padding: 6px; border: 1px solid #57534e; border-radius: 7px; background: #292524; box-shadow: 0 8px 24px #0008; }
 .find-bar input { width: 240px; border: 1px solid #57534e; border-radius: 4px; background: #1c1917; color: #f5f5f4; padding: 7px 9px; outline: 0; }
+.find-bar input[aria-label="Replace with"] { width: 180px; }
 .find-bar input:focus { border-color: #fb923c; }
 .find-bar button { min-width: 30px; padding: 6px 8px; }
 .find-bar button:disabled { cursor: default; opacity: .45; }

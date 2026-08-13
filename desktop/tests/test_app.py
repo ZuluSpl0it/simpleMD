@@ -1,5 +1,6 @@
 from pathlib import Path
 from datetime import datetime, timezone
+import json
 
 
 def test_webview_uses_private_profile(tmp_path: Path, monkeypatch):
@@ -14,6 +15,94 @@ def test_webview_uses_private_profile(tmp_path: Path, monkeypatch):
     assert captured["kwargs"]["http_server"] is True
     assert captured["kwargs"]["debug"] is True
     assert "storage_path" not in captured["kwargs"]
+
+
+def test_bind_drop_handlers_registers_once_with_default_prevention(monkeypatch):
+    from flatnotes_desktop import app
+
+    handlers = {}
+
+    class Event:
+        def __iadd__(self, handler):
+            handlers.setdefault(self.name, []).append(handler)
+            return self
+
+        def __init__(self, name):
+            self.name = name
+
+    class Events:
+        dragover = Event("dragover")
+        drop = Event("drop")
+
+    class Document:
+        events = Events()
+
+    class Dom:
+        document = Document()
+
+    class Window:
+        dom = Dom()
+
+    class Handler:
+        def __init__(self, callback, **options):
+            self.callback = callback
+            self.options = options
+
+    monkeypatch.setattr(app, "DOMEventHandler", Handler)
+    window = Window()
+
+    app.bind_drop_handlers(window)
+    app.bind_drop_handlers(window)
+
+    assert set(handlers) == {"dragover", "drop"}
+    assert len(handlers["drop"]) == 1
+    assert handlers["dragover"][0].options == {
+        "prevent_default": True,
+        "stop_propagation": True,
+        "debounce": 250,
+    }
+    assert handlers["drop"][0].options == {
+        "prevent_default": True,
+        "stop_propagation": True,
+    }
+
+
+def test_drop_handler_dispatches_ordered_markdown_paths_as_json(tmp_path: Path):
+    from flatnotes_desktop import app
+
+    first = tmp_path / "one.md"
+    second = tmp_path / "two.MD"
+    other = tmp_path / "ignore.txt"
+    for path in (first, second, other):
+        path.write_text("content", encoding="utf-8")
+
+    evaluated = []
+    window = type("Window", (), {"evaluate_js": evaluated.append})()
+    handler = app.make_drop_handler(window)
+    handler({"dataTransfer": {"files": [
+        {"pywebviewFullPath": str(first)},
+        {"pywebviewFullPath": str(other)},
+        {"pywebviewFullPath": str(second)},
+    ]}})
+
+    assert len(evaluated) == 1
+    assert json.dumps([str(first), str(second)]) in evaluated[0]
+
+
+def test_drop_handler_ignores_empty_and_invalid_entries(tmp_path: Path):
+    from flatnotes_desktop import app
+
+    evaluated = []
+    window = type("Window", (), {"evaluate_js": evaluated.append})()
+    handler = app.make_drop_handler(window)
+    handler({"dataTransfer": {"files": [
+        {},
+        {"pywebviewFullPath": str(tmp_path)},
+        {"pywebviewFullPath": str(tmp_path / "missing.md")},
+        {"pywebviewFullPath": str(tmp_path / "ignore.txt")},
+    ]}})
+
+    assert evaluated == []
 
 
 def test_index_rebuild_is_delayed_until_after_startup():

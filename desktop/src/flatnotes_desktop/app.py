@@ -1,13 +1,61 @@
+import json
 from pathlib import Path
 import sys
 from threading import Timer
 
 import webview
+from webview.dom import DOMEventHandler
 
 from .bridge import DesktopBridge
 from .files import FileService
 from .settings import SettingsStore
 from .startup import StartupTrace, startup_trace_path, trace_request, trace_response
+
+
+def make_drop_handler(window):
+    def on_drop(event):
+        try:
+            files = event.get("dataTransfer", {}).get("files", [])
+            paths = []
+            seen = set()
+            for file in files:
+                raw_path = file.get("pywebviewFullPath")
+                if not raw_path:
+                    continue
+                path = Path(raw_path)
+                key = str(path).casefold()
+                if key in seen or path.suffix.lower() != ".md" or not path.is_file():
+                    continue
+                seen.add(key)
+                paths.append(str(path))
+            if not paths:
+                return
+            payload = json.dumps(paths)
+            window.evaluate_js(
+                "window.dispatchEvent(new CustomEvent('flatnotes-drop', "
+                "{detail: {paths: " + payload + "}}));"
+            )
+        except (AttributeError, TypeError, ValueError, OSError):
+            return
+
+    return on_drop
+
+
+def bind_drop_handlers(window):
+    if getattr(window, "_flatnotes_drop_bound", False):
+        return
+    window.dom.document.events.dragover += DOMEventHandler(
+        lambda _event: None,
+        prevent_default=True,
+        stop_propagation=True,
+        debounce=250,
+    )
+    window.dom.document.events.drop += DOMEventHandler(
+        make_drop_handler(window),
+        prevent_default=True,
+        stop_propagation=True,
+    )
+    window._flatnotes_drop_bound = True
 
 
 def schedule_workspace_rebuild(workspace, delay: float = 2.0, timer_factory=Timer, trace=None, rebuild=None) -> None:
@@ -79,6 +127,7 @@ def run() -> None:
     def on_loaded():
         nonlocal startup_rebuild_scheduled
         trace("window-loaded")
+        bind_drop_handlers(window)
         if bridge.workspace is not None and not startup_rebuild_scheduled:
             startup_rebuild_scheduled = True
             startup_workspace = bridge.workspace
@@ -94,7 +143,7 @@ def run() -> None:
         # registration can block the callback thread and leave the native
         # window showing as "Not Responding" on the first launch.
         trace("startup-callback-entered")
-        trace("drop-handler-disabled")
+        trace("drop-handler-deferred")
 
     window.events.loaded += on_loaded
 

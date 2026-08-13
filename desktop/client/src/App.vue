@@ -234,9 +234,19 @@ async function rebuildSearchIndex() {
     indexBusy.value = false;
   }
 }
-function handleDrop(event) {
-  const document = event.detail;
-  if (document?.kind === "external") tabs.open(document);
+async function handleDrop(event) {
+  const paths = Array.isArray(event.detail?.paths) ? event.detail.paths : [];
+  for (const path of paths) {
+    try {
+      const document = await openDroppedPath(path);
+      if (document?.kind === "external") tabs.open(classifyDocument(document, workspace.value));
+    } catch (_error) {
+      // Continue opening the remaining files in this drop.
+    }
+  }
+  if (!paths.length && event.detail?.kind && event.detail?.path) {
+    tabs.open(classifyDocument(event.detail, workspace.value));
+  }
 }
 onMounted(async () => {
   window.addEventListener("keydown", handleShortcut, true);

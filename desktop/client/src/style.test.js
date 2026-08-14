@@ -33,30 +33,27 @@ it("keeps the rebuild-index action visible on the home screen", () => {
   expect(css).toMatch(/\.home\s+\.rebuild-index-button\s*\{[^}]*display:\s*inline-block/);
 });
 
-it("uses larger, more distinct heading sizes in the editor and heading picker", () => {
+it("uses configurable text, code, and heading multipliers", () => {
   const css = readFileSync(stylePath, "utf8");
 
-  expect(css).toMatch(/\.editor\.viewing\s+\.toastui-editor-contents\s*\{[^}]*font-size:\s*var\(--flatnotes-font-size\)/);
-  expect(css).toMatch(/\.editor\.viewing\s+\.toastui-editor-contents\s+p,/);
-  expect(css).toMatch(/\.editor\.viewing\s+\.toastui-editor-contents\s+li\s*\{[^}]*font-size:\s*var\(--flatnotes-font-size\)/);
-  expect(css).toMatch(/\.editor\.viewing\s+\.toastui-editor-contents\s+h1\s*\{[^}]*font-size:\s*calc\(var\(--flatnotes-font-size\) \* 2\)/);
-  expect(css).toMatch(/\.editor\.viewing\s+\.toastui-editor-contents\s+h6\s*\{[^}]*font-size:\s*calc\(var\(--flatnotes-font-size\) \* \.9412\)/);
-  expect(css).toMatch(/\.editor\.viewing\s+\.toastui-editor-contents\s+pre,/);
-  expect(css).toMatch(/\.editor\.viewing\s+\.toastui-editor-contents\s+pre\s+code\s*\{[^}]*font-size:\s*var\(--flatnotes-code-font-size\)/);
-  expect(css).toMatch(/\.toastui-editor-popup-add-heading\s+h1\s*\{[^}]*font-size:\s*30px/);
-  expect(css).toMatch(/\.toastui-editor-popup-add-heading\s+h6\s*\{[^}]*font-size:\s*16px/);
-});
-
-it("uses configurable typography variables in reading and editing views", () => {
-  const css = readFileSync(stylePath, "utf8");
-
-  expect(css).toMatch(/--flatnotes-font-size:\s*17px/);
-  expect(css).toMatch(/--flatnotes-code-font-size:\s*13px/);
-  expect(css).toMatch(/\.editor\.viewing\s+\.toastui-editor-contents\s+p,[\s\S]*font-size:\s*var\(--flatnotes-font-size\)/);
-  expect(css).toMatch(/\.editor-shell\.editing\s+\.editor\.markdown-only[\s\S]*font-size:\s*var\(--flatnotes-font-size\)/);
-  expect(css).toMatch(/\.editor-shell\.editing\s+\.editor\.markdown-only\s+\.ProseMirror\s*\{[^}]*font-size:\s*var\(--flatnotes-font-size\)\s*!important/);
-  expect(css).toMatch(/\.editor-shell\.editing\s+\.editor\.markdown-only\s+\.ProseMirror\s+\.toastui-editor-md-heading1\s*\{[^}]*font-size:\s*calc\(var\(--flatnotes-font-size\) \* 2\)/);
-  expect(css).toMatch(/\.editor-shell\.editing[\s\S]*\.toastui-editor-contents\s+pre\s+code[\s\S]*font-size:\s*var\(--flatnotes-code-font-size\)/);
+  expect(css).toMatch(/--flatnotes-text-font-size:\s*14px/);
+  expect(css).toMatch(/--flatnotes-code-font-size:\s*12px/);
+  for (const level of ["h1", "h2", "h3", "h4", "h5", "h6"]) {
+    const number = level.slice(1);
+    expect(css).toMatch(new RegExp(`--flatnotes-${level}-multiplier:`));
+    expect(css).toMatch(new RegExp(
+      `\.editor\.viewing\\s+\.toastui-editor-contents\\s+${level}\\s*\\{[^}]*font-size:\\s*calc\\(\\s*var\\(--flatnotes-text-font-size\\) \\* var\\(--flatnotes-${level}-multiplier\\)`,
+    ));
+    expect(css).toMatch(new RegExp(
+      `\.toastui-editor-md-heading${number}\\s*\\{[^}]*font-size:\\s*calc\\(\\s*var\\(--flatnotes-text-font-size\\) \\* var\\(--flatnotes-${level}-multiplier\\)`,
+    ));
+    expect(css).toMatch(new RegExp(
+      `\.toastui-editor-ww-container\\s+\.toastui-editor-contents\\s+${level}\\s*\\{[^}]*font-size:\\s*calc\\(\\s*var\\(--flatnotes-text-font-size\\) \\* var\\(--flatnotes-${level}-multiplier\\)`,
+    ));
+  }
+  expect(css).toMatch(/\.editor\.viewing\s+\.toastui-editor-contents\s+p,[\s\S]*font-size:\s*var\(--flatnotes-text-font-size\)/);
+  expect(css).toMatch(/\.editor-shell\.editing\s+\.editor\.markdown-only[\s\S]*font-size:\s*var\(--flatnotes-text-font-size\)/);
+  expect(css).toMatch(/\.toastui-editor-contents\s+pre\s+code[\s\S]*font-size:\s*var\(--flatnotes-code-font-size\)/);
 });
 
 it("flattens only WYSIWYG paragraphs created by soft breaks", () => {

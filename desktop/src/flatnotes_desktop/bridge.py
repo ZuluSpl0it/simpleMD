@@ -13,6 +13,10 @@ from .workspace import WorkspaceService
 from .watcher import Fingerprint, changed_since
 
 
+def _is_windows_absolute_path(value: str) -> bool:
+    return (len(value) >= 3 and value[1] == ":" and value[2] in "\\/") or value.startswith("\\\\")
+
+
 class DesktopBridge:
     def __init__(self, window, file_service: FileService, settings=None, workspace=None, trace=None, thread_factory=None):
         self.window = window
@@ -74,15 +78,21 @@ class DesktopBridge:
         return bool(webbrowser.open(url))
 
     def open_markdown_link(self, current_path: str, href: str) -> dict:
-        parsed = urlparse(href)
-        if parsed.scheme in {"http", "https"}:
+        decoded_href = unquote(href)
+        if _is_windows_absolute_path(decoded_href):
+            target = Path(decoded_href.split("#", 1)[0]).resolve()
+            parsed = None
+        else:
+            parsed = urlparse(href)
+            target = None
+        if parsed is not None and parsed.scheme in {"http", "https"}:
             self.open_external_link(href)
             return {"opened": True}
-        if parsed.scheme and parsed.scheme != "file":
+        if parsed is not None and parsed.scheme and parsed.scheme != "file":
             return {"error": "Unsupported link type."}
-        if parsed.scheme == "file":
+        if target is None and parsed.scheme == "file":
             target = Path(url2pathname(unquote(parsed.path)))
-        else:
+        elif target is None:
             target = Path(current_path).resolve().parent / unquote(parsed.path)
         target = target.resolve()
         if not target.exists():

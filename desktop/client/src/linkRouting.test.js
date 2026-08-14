@@ -18,6 +18,13 @@ describe("classifyLink", () => {
     expect(classifyLink("assets/diagram.png")).toEqual({ kind: "file", href: "assets/diagram.png" });
   });
 
+  it("recognizes percent-encoded Windows Markdown paths", () => {
+    expect(classifyLink("C:%5Csrc%5Cdist%5CFlatnotes%5Cworkspace%5Cpokeno_readme.md")).toEqual({
+      kind: "markdown",
+      href: "C:\\src\\dist\\Flatnotes\\workspace\\pokeno_readme.md",
+    });
+  });
+
   it("prevents navigation only for non-anchor routes", () => {
     const preventDefault = vi.fn();
     const anchor = { getAttribute: () => "parts/setup.md" };

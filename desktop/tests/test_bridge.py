@@ -153,6 +153,12 @@ def test_open_markdown_link_rejects_missing_or_non_markdown_targets(tmp_path):
     assert "error" in bridge.open_markdown_link(str(source), "image.png")
 
 
+def test_windows_drive_links_decode_into_local_paths():
+    from flatnotes_desktop.bridge import _is_windows_absolute_path
+
+    assert _is_windows_absolute_path(r"C:\src\dist\Flatnotes\workspace\pokeno_readme.md") is True
+
+
 def test_drop_rejects_folder_and_non_markdown(tmp_path: Path):
     from flatnotes_desktop.bridge import DesktopBridge
     from flatnotes_desktop.files import FileService

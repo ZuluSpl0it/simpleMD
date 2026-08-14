@@ -5,6 +5,7 @@
   <MarkdownEditor v-else :key="`${tabs.active.value.id}-${tabs.active.value.mode}-${tabs.active.value.editing}-${tabs.active.value.editorRevision}-${theme}`" :content="tabs.active.value.content" :mode="tabs.active.value.mode" :editing="tabs.active.value.editing" :theme="theme" :find-query="findQuery" :find-index="findIndex" :initial-scroll-position="tabs.active.value.scrollPosition" :scroll-key="tabs.active.value.id" :path="tabs.active.value.path" @change="(content) => tabs.setContent(tabs.activeId.value, content)" @mode-change="(mode) => tabs.active.value.mode = mode" @find-count="setFindCount" @scroll-position="(id, position) => tabs.setScrollPosition(id, position)" @link-click="handleEditorLink" />
   <ConflictDialog v-if="conflictTab" :visible="true" :tab="conflictTab" @resolve="resolveConflict" />
   <CloseDialog v-if="pendingCloseTab" :tab="pendingCloseTab" @resolve="resolveClose" />
+  <TextInputDialog v-if="inputDialog" :title="inputDialog.title" :label="inputDialog.label" :value="inputDialog.value" :confirm-label="inputDialog.confirmLabel" @submit="resolveInputDialog" @cancel="cancelInputDialog" />
 </template>
 
 <script setup>
@@ -16,6 +17,7 @@ import TabBar from "./components/TabBar.vue";
 import MarkdownEditor from "./components/MarkdownEditor.vue";
 import ConflictDialog from "./components/ConflictDialog.vue";
 import CloseDialog from "./components/CloseDialog.vue";
+import TextInputDialog from "./components/TextInputDialog.vue";
 import { createTabs } from "./stores/tabs.js";
 import { classifyDocument } from "./documents.js";
 import { replaceAllMatches, replaceMatch } from "./find.js";
@@ -24,11 +26,13 @@ import {
   DEFAULT_HEADING_COLORS,
 } from "./headingColors.js";
 import { applyFontSettings, DEFAULT_FONT_SIZES } from "./fontSettings.js";
+import { isShortcut } from "./shortcuts.js";
 
 const workspace = ref(null);
 const tabs = createTabs();
 const conflictTab = ref(null);
 const pendingCloseTab = ref(null);
+const inputDialog = ref(null);
 const findOpen = ref(false);
 const findQuery = ref("");
 const replacementQuery = ref("");
@@ -87,11 +91,15 @@ function replaceAllActive() {
   if (nextContent !== tab.content) tabs.setContent(tab.id, nextContent);
 }
 function handleShortcut(event) {
-  if ((event.ctrlKey || event.metaKey) && event.code === "KeyF" && tabs.active.value) {
+  if (isShortcut(event, "KeyS") && tabs.active.value) {
+    event.preventDefault();
+    event.stopPropagation();
+    void saveActive();
+  } else if (isShortcut(event, "KeyF") && tabs.active.value) {
     event.preventDefault();
     event.stopPropagation();
     openFind();
-  } else if ((event.ctrlKey || event.metaKey) && event.code === "KeyH" && tabs.active.value) {
+  } else if (isShortcut(event, "KeyH") && tabs.active.value) {
     event.preventDefault();
     event.stopPropagation();
     goHome();
@@ -129,14 +137,34 @@ async function openResult(result) {
   const document = await openDroppedPath(result.path);
   if (document?.kind === "external") tabs.open({ ...document, kind: "workspace", title: result.title });
 }
+function requestInput(operation, tab, title, label, value, confirmLabel) {
+  inputDialog.value = { operation, tabId: tab.id, title, label, value, confirmLabel };
+}
+function cancelInputDialog() { inputDialog.value = null; }
+async function resolveInputDialog(value) {
+  const request = inputDialog.value;
+  inputDialog.value = null;
+  if (!request) return;
+  const tab = tabs.byId(request.tabId);
+  if (!tab) return;
+  if (request.operation === "save") {
+    const created = await createWorkspaceNote(value, tab.content);
+    Object.assign(tab, { path: created.path, title: created.title, content: created.content, savedContent: created.content, dirty: false, modified_ns: created.modified_ns, content_hash: created.content_hash });
+    return;
+  }
+  tab.renaming = true;
+  try {
+    const renamed = await renameWorkspaceNote(tab.title, value);
+    Object.assign(tab, { title: renamed.title, path: renamed.path, modified_ns: renamed.modified_ns, content_hash: renamed.content_hash, externalState: null });
+  } finally {
+    tab.renaming = false;
+  }
+}
 async function saveActive() {
   const tab = tabs.active.value;
   if (!tab?.path) {
     if (tab?.kind === "workspace") {
-      const title = window.prompt("Note title", tab.title === "Untitled" ? "" : tab.title);
-      if (!title) return;
-      const created = await createWorkspaceNote(title, tab.content);
-      Object.assign(tab, { path: created.path, title: created.title, content: created.content, savedContent: created.content, dirty: false, modified_ns: created.modified_ns, content_hash: created.content_hash });
+      requestInput("save", tab, "Save", "Note title", tab.title === "Untitled" ? "" : tab.title, "Save");
       return;
     }
     return saveActiveAs();
@@ -152,21 +180,8 @@ async function saveActiveAs() {
 }
 async function renameActive() {
   const tab = tabs.active.value;
-  const title = window.prompt("New note title", tab.title);
-  if (!title || title === tab.title) return;
-  tab.renaming = true;
-  try {
-    const renamed = await renameWorkspaceNote(tab.title, title);
-    Object.assign(tab, {
-      title: renamed.title,
-      path: renamed.path,
-      modified_ns: renamed.modified_ns,
-      content_hash: renamed.content_hash,
-      externalState: null,
-    });
-  } finally {
-    tab.renaming = false;
-  }
+  if (!tab) return;
+  requestInput("rename", tab, "Rename", "New note title", tab.title, "Rename");
 }
 async function deleteActive() {
   const tab = tabs.active.value;

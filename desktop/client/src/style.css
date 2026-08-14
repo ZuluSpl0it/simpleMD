@@ -108,6 +108,7 @@ button:not(.toastui-editor-toolbar-icons):disabled { cursor: default; opacity: .
   box-shadow: 0 8px 30px #57534e55;
 }
 :root[data-theme="light"] .modal-backdrop { background: #57534e66; }
+:root[data-theme="light"] .toastui-editor-contents pre { background: #e7e5e4; }
 :root[data-theme="light"] .toastui-editor-toolbar-icons {
   background-position-y: 3px !important;
 }

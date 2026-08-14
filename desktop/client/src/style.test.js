@@ -91,3 +91,11 @@ it("colors headings only in reader and WYSIWYG views", () => {
   expect(css).not.toMatch(/markdown-only[^}]*--flatnotes-h[1-6]-color/);
   expect(css).not.toMatch(/border[^;}]*var\(--flatnotes-h[1-6]-color\)/);
 });
+
+it("uses a darker code-block surface in rendered light-theme views", () => {
+  const css = readFileSync(stylePath, "utf8");
+
+  expect(css).toMatch(
+    /:root\[data-theme="light"\]\s+\.toastui-editor-contents\s+pre\s*\{[^}]*background:\s*#e7e5e4/,
+  );
+});

@@ -1,6 +1,6 @@
 <template>
   <main class="home">
-    <h1>Flatnotes</h1>
+    <h1>simpleMD</h1>
     <p v-if="workspace">Workspace: {{ workspace }}</p>
     <p v-else>No workspace selected.</p>
     <button type="button" @click="$emit('select-workspace')">Select workspace</button>

@@ -1,6 +1,6 @@
 <template>
   <div v-if="visible" class="conflict" role="dialog">
-    <p>{{ tab.externalState === "missing" ? "File no longer exists." : "File changed outside Flatnotes." }}</p>
+    <p>{{ tab.externalState === "missing" ? "File no longer exists." : "File changed outside simpleMD." }}</p>
     <button v-if="actions.includes('reload')" type="button" @click="$emit('resolve', 'reload')">Reload</button>
     <button v-if="actions.includes('overwrite')" type="button" @click="$emit('resolve', 'overwrite')">Overwrite</button>
     <button v-if="actions.includes('saveAs')" type="button" @click="$emit('resolve', 'saveAs')">Save As</button>

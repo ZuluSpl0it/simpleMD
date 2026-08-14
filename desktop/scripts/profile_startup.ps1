@@ -5,11 +5,11 @@ param(
 
 $ErrorActionPreference = "Stop"
 $desktop = Split-Path $PSScriptRoot -Parent
-$exe = Join-Path $desktop "dist\Flatnotes\Flatnotes.exe"
-$logDirectory = Join-Path $desktop "dist\Flatnotes\data\startup-logs"
+$exe = Join-Path $desktop "dist\simpleMD.exe"
+$logDirectory = Join-Path $desktop "dist\data\startup-logs"
 $results = @()
 
-if (-not (Test-Path $exe)) { throw "Flatnotes.exe missing: $exe" }
+if (-not (Test-Path $exe)) { throw "simpleMD.exe missing: $exe" }
 New-Item -ItemType Directory -Force $logDirectory | Out-Null
 
 for ($run = 1; $run -le $Runs; $run++) {

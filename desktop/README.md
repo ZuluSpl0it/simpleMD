@@ -1,4 +1,4 @@
-# Flatnotes Desktop
+# simpleMD Desktop
 
 Build on Windows 10/11 x64 with PowerShell:
 
@@ -7,16 +7,16 @@ Set-ExecutionPolicy -Scope Process Bypass
 .\scripts\build_windows.ps1
 ```
 
-Output: `dist\Flatnotes\Flatnotes.exe` with a writable `data` directory beside it. The system WebView2 Runtime is required; the app must show its official install link when that runtime is unavailable.
+Output: `dist\simpleMD.exe` with writable `data` and `workspace` directories beside it. The system WebView2 Runtime is required; the app must show its official install link when that runtime is unavailable.
 
-Close Flatnotes before rebuilding. The build now stages PyInstaller output in
-`dist\.flatnotes-build`, then replaces only the executable and `_internal`
+Close simpleMD before rebuilding. The build now stages PyInstaller output in
+`build\.simpleMD-build`, then replaces only the executable and `_internal`
 runtime files. Existing `data` and `workspace` contents are preserved.
 
 ## Startup diagnostics
 
 The packaged app writes one timestamped trace per launch under
-`dist\Flatnotes\data\startup-logs`. To profile repeated starts on Windows:
+`dist\data\startup-logs`. To profile repeated starts on Windows:
 
 ```powershell
 .\scripts\profile_startup.ps1 -Runs 10

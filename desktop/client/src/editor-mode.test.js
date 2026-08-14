@@ -10,3 +10,8 @@ it("persists a tab's selected editor mode", () => {
   expect(editor).toMatch(/changeMode[\s\S]*emit\("mode-change",\s*mode\)/);
   expect(app).toMatch(/@mode-change="\(mode\)\s*=>\s*tabs\.active\.value\.mode\s*=\s*mode"/);
 });
+
+it("does not remount the editor while switching Markdown and WYSIWYG", () => {
+  expect(app).not.toMatch(/:key="[^"]*tabs\.active\.value\.mode/);
+  expect(app).toMatch(/:key="[^"]*tabs\.active\.value\.editing/);
+});

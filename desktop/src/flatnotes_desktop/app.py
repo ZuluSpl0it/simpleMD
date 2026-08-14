@@ -110,7 +110,7 @@ def run() -> None:
     bridge.restore_workspace()
     trace("workspace-restored")
     window = webview.create_window(
-        "Flatnotes",
+        "simpleMD",
         str(asset_root / "loading.html"),
         js_api=bridge,
         text_select=True,
@@ -157,15 +157,15 @@ def run() -> None:
     except Exception as error:
         trace(f"webview-error:{type(error).__name__}")
         message = (
-            "Flatnotes could not start its WebView2 runtime.\n\n"
-            "Install Microsoft Edge WebView2 Runtime, then start Flatnotes again:\n"
+                "simpleMD could not start its WebView2 runtime.\n\n"
+                "Install Microsoft Edge WebView2 Runtime, then start simpleMD again:\n"
             "https://developer.microsoft.com/microsoft-edge/webview2/\n\n"
             f"Details: {error}"
         )
         if sys.platform == "win32":
             import ctypes
 
-            ctypes.windll.user32.MessageBoxW(0, message, "Flatnotes", 0x10)
+            ctypes.windll.user32.MessageBoxW(0, message, "simpleMD", 0x10)
         else:
             print(message)
 

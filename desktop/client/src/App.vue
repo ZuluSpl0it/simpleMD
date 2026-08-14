@@ -23,6 +23,7 @@ import {
   applyHeadingColors,
   DEFAULT_HEADING_COLORS,
 } from "./headingColors.js";
+import { applyFontSettings, DEFAULT_FONT_SIZES } from "./fontSettings.js";
 
 const workspace = ref(null);
 const tabs = createTabs();
@@ -286,9 +287,8 @@ onMounted(async () => {
     headingColors.value,
     theme.value,
   );
-  const fontSettings = await getFontSettings().catch(() => ({ font_size: 17, code_font_size: 13 }));
-  document.documentElement.style.setProperty("--flatnotes-font-size", `${fontSettings.font_size}px`);
-  document.documentElement.style.setProperty("--flatnotes-code-font-size", `${fontSettings.code_font_size}px`);
+  const fontSettings = await getFontSettings().catch(() => DEFAULT_FONT_SIZES);
+  applyFontSettings(document.documentElement, fontSettings);
   workspace.value = await getWorkspace();
   await pollIndexStatus();
   await startupEvent("frontend-workspace-read");

@@ -111,6 +111,48 @@ def test_open_dialog_returns_external_document(tmp_path: Path):
     assert bridge.open_markdown()["kind"] == "external"
 
 
+def test_open_external_link_uses_browser_adapter(monkeypatch):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+    import webbrowser
+
+    opened = []
+    monkeypatch.setattr(webbrowser, "open", lambda url: opened.append(url) or True)
+    bridge = DesktopBridge(FakeWindow(None), FileService())
+
+    assert bridge.open_external_link("https://example.com/docs") is True
+    assert opened == ["https://example.com/docs"]
+
+
+def test_open_markdown_link_resolves_relative_to_current_file(tmp_path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+
+    source = tmp_path / "guide.md"
+    target = tmp_path / "parts" / "setup.md"
+    target.parent.mkdir()
+    source.write_text("body", encoding="utf-8")
+    target.write_text("# Install", encoding="utf-8")
+    bridge = DesktopBridge(FakeWindow(None), FileService())
+
+    result = bridge.open_markdown_link(str(source), "parts/setup.md#install")
+
+    assert result["path"] == str(target.resolve())
+    assert result["content"] == "# Install"
+
+
+def test_open_markdown_link_rejects_missing_or_non_markdown_targets(tmp_path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+
+    source = tmp_path / "guide.md"
+    source.write_text("body", encoding="utf-8")
+    bridge = DesktopBridge(FakeWindow(None), FileService())
+
+    assert "error" in bridge.open_markdown_link(str(source), "missing.md")
+    assert "error" in bridge.open_markdown_link(str(source), "image.png")
+
+
 def test_drop_rejects_folder_and_non_markdown(tmp_path: Path):
     from flatnotes_desktop.bridge import DesktopBridge
     from flatnotes_desktop.files import FileService

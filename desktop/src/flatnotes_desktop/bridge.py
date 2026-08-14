@@ -1,5 +1,10 @@
+import os
 from pathlib import Path
 from threading import Lock, RLock, Thread
+import sys
+import webbrowser
+from urllib.parse import unquote, urlparse
+from urllib.request import url2pathname
 
 from .files import FileService
 from .models import default_font_sizes, default_heading_colors
@@ -60,6 +65,41 @@ class DesktopBridge:
         if not result:
             return None
         return self._document_payload(self.file_service.open_external(result[0]))
+
+    @staticmethod
+    def open_external_link(url: str) -> bool:
+        parsed = urlparse(url)
+        if parsed.scheme not in {"http", "https"}:
+            raise ValueError("Only web links can open in the browser.")
+        return bool(webbrowser.open(url))
+
+    def open_markdown_link(self, current_path: str, href: str) -> dict:
+        parsed = urlparse(href)
+        if parsed.scheme in {"http", "https"}:
+            self.open_external_link(href)
+            return {"opened": True}
+        if parsed.scheme and parsed.scheme != "file":
+            return {"error": "Unsupported link type."}
+        if parsed.scheme == "file":
+            target = Path(url2pathname(unquote(parsed.path)))
+        else:
+            target = Path(current_path).resolve().parent / unquote(parsed.path)
+        target = target.resolve()
+        if not target.exists():
+            return {"error": f"Link target does not exist: {target}"}
+        if target.suffix.lower() == ".md":
+            try:
+                return self._document_payload(self.file_service.open_external(target))
+            except (OSError, ValueError) as error:
+                return {"error": str(error)}
+        try:
+            if sys.platform == "win32":
+                os.startfile(str(target))
+            else:
+                webbrowser.open(target.as_uri())
+            return {"opened": True}
+        except (OSError, ValueError) as error:
+            return {"error": str(error)}
 
     def open_dropped_path(self, path: str) -> dict:
         target = Path(path)

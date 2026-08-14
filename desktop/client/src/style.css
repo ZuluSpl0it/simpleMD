@@ -232,3 +232,10 @@ button:not(.toastui-editor-toolbar-icons):disabled { cursor: default; opacity: .
 .close-dialog { min-width: 330px; padding: 20px; border: 1px solid #78716c; border-radius: 8px; background: #292524; box-shadow: 0 8px 30px #0008; }
 .close-dialog p { margin: 0 0 16px; }
 .close-dialog div { display: flex; justify-content: flex-end; gap: 8px; }
+.text-input-dialog { min-width: 330px; max-width: min(460px, calc(100vw - 40px)); padding: 20px; border: 1px solid #78716c; border-radius: 8px; background: #292524; color: #f5f5f4; box-shadow: 0 8px 30px #0008; }
+.text-input-dialog h2 { margin: 0 0 16px; font-size: 20px; }
+.text-input-dialog label { display: block; margin-bottom: 6px; }
+.text-input-dialog input { box-sizing: border-box; width: 100%; padding: 8px 10px; border: 1px solid #78716c; border-radius: 5px; background: #1c1917; color: #f5f5f4; }
+.text-input-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+:root[data-theme="light"] .text-input-dialog { border-color: #a8a29e; background: #ffffff; color: #292524; box-shadow: 0 8px 30px #57534e55; }
+:root[data-theme="light"] .text-input-dialog input { border-color: #d6d3d1; background: #ffffff; color: #292524; }

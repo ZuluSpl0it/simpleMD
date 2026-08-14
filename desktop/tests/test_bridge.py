@@ -352,3 +352,34 @@ def test_create_workspace_note_returns_saved_document(tmp_path: Path):
 
     assert result["kind"] == "workspace"
     assert (root / "Projects" / "plan.md").read_text() == "body"
+
+
+def test_bridge_reads_heading_colors(tmp_path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+    from flatnotes_desktop.settings import SettingsStore
+
+    store = SettingsStore(tmp_path / "data")
+    store.data_directory.mkdir(parents=True)
+    store.path.write_text(
+        '{"heading_colors":{"dark":{"h1":"#010203"},'
+        '"light":{"h6":"#A0B0C0"}}}',
+        encoding="utf-8",
+    )
+    bridge = DesktopBridge(None, FileService(), settings=store)
+
+    colors = bridge.get_heading_colors()
+
+    assert colors["dark"]["h1"] == "#010203"
+    assert colors["light"]["h6"] == "#A0B0C0"
+    assert set(colors["dark"]) == {f"h{level}" for level in range(1, 7)}
+
+
+def test_bridge_heading_colors_fall_back_without_settings():
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+    from flatnotes_desktop.models import default_heading_colors
+
+    bridge = DesktopBridge(None, FileService())
+
+    assert bridge.get_heading_colors() == default_heading_colors()

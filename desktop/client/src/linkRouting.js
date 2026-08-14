@@ -18,10 +18,23 @@ export function classifyLink(href) {
   return { kind: "file", href: value };
 }
 
+export function linkDestinationAttributes(destination) {
+  return { "data-flatnotes-href": String(destination || "") };
+}
+
+function linkAnchorFromEvent(event) {
+  const closest = event.target?.closest?.("a[href], a[data-flatnotes-href]");
+  if (closest) return closest;
+  return event.composedPath?.().find((node) => (
+    node?.tagName === "A"
+    && (node.getAttribute?.("data-flatnotes-href") || node.getAttribute?.("href"))
+  )) || null;
+}
+
 export function routeLinkClick(event, currentPath, onRoute) {
-  const anchor = event.target?.closest?.("a[href]");
+  const anchor = linkAnchorFromEvent(event);
   if (!anchor) return false;
-  const route = classifyLink(anchor.getAttribute("href"));
+  const route = classifyLink(anchor.getAttribute("data-flatnotes-href") || anchor.getAttribute("href"));
   if (route.kind === "anchor") return false;
   event.preventDefault();
   onRoute({ ...route, path: currentPath });

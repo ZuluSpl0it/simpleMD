@@ -1,10 +1,20 @@
 import { computed, reactive, ref } from "vue";
 
+function normalizePath(path) {
+  return String(path || "").replaceAll("\\", "/").replace(/\/+$/, "").toLocaleLowerCase();
+}
+
 export function createTabs() {
   const items = reactive([]);
   const activeId = ref(null);
   const byId = (id) => items.find((item) => item.id === id);
   function open(document) {
+    const path = normalizePath(document.path);
+    const existing = path ? items.find((item) => normalizePath(item.path) === path) : null;
+    if (existing) {
+      activeId.value = existing.id;
+      return existing.id;
+    }
     const id = `${Date.now()}-${items.length}`;
     const mode = document.mode || "markdown";
     const editing = document.editing ?? false;

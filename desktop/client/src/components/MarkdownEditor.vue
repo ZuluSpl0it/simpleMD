@@ -9,13 +9,13 @@ import Editor from "@toast-ui/editor";
 import "@toast-ui/editor/dist/toastui-editor.css";
 import "@toast-ui/editor/dist/theme/toastui-editor-dark.css";
 import { clearFindHighlights, highlightMatches } from "../find.js";
-import { routeLinkClick } from "../linkRouting.js";
+import { linkDestinationAttributes, routeLinkClick } from "../linkRouting.js";
 import { configureWysiwygSoftBreaks } from "../softBreaks.js";
 import { createScrollPositionListener, preserveModeScroll, readScrollPosition, restoreScrollPosition } from "../editorScroll.js";
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
 const props = defineProps({ content: { type: String, default: "" }, mode: { type: String, default: "markdown" }, editing: { type: Boolean, default: false }, theme: { type: String, default: "dark" }, findQuery: { type: String, default: "" }, findIndex: { type: Number, default: 0 }, initialScrollPosition: { type: Object, default: () => ({ view: "viewing", top: 0, ratio: 0 }) }, scrollKey: { type: String, default: "" }, path: { type: String, default: "" } });
-const emit = defineEmits(["change", "find-count", "scroll-position", "link-click"]);
+const emit = defineEmits(["change", "find-count", "scroll-position", "link-click", "mode-change"]);
 const container = ref();
 let editor;
 let scrollTargets = [];
@@ -53,13 +53,19 @@ function restoreInitialScroll() {
   restoreScrollPosition(container.value, props.editing ? props.mode : "viewing", props.initialScrollPosition);
 }
 onMounted(() => {
-  container.value.addEventListener("click", handleLinkClick);
+  // Capture links before Toast UI or ProseMirror can consume the click.
+  container.value.addEventListener("click", handleLinkClick, true);
   const options = {
     el: container.value,
     height: "100%",
     theme: props.theme,
     initialValue: props.editing ? "" : props.content,
     customHTMLRenderer: {
+      link: (node, { entering, origin }) => {
+        const rendered = origin();
+        if (entering) rendered.attributes = { ...rendered.attributes, ...linkDestinationAttributes(node.destination) };
+        return rendered;
+      },
       // Markdown soft breaks are wrapping hints, not intentional line breaks.
       // Keep hard breaks (two trailing spaces, backslash, or <br>) intact.
       softbreak: () => ({ type: "html", content: " " }),
@@ -73,6 +79,7 @@ onMounted(() => {
     editor.setMarkdown(props.content, false);
     editor.on("changeMode", (mode) => {
       preserveModeScroll(container.value, mode, lastScrollPosition, undefined, (position) => emitScrollPosition(position));
+      emit("mode-change", mode);
       bindScrollListeners();
     });
     editor.on("change", () => emit("change", editor.getMarkdown()));
@@ -86,7 +93,7 @@ onMounted(() => {
 watch(() => props.content, (value) => { if (editor && editor.getMarkdown && editor.getMarkdown() !== value) editor.setMarkdown(value); });
 watch(() => [props.findQuery, props.findIndex, props.content, props.editing, props.theme], refreshHighlights);
 onBeforeUnmount(() => {
-  container.value?.removeEventListener("click", handleLinkClick);
+  container.value?.removeEventListener("click", handleLinkClick, true);
   emitScrollPosition();
   for (const target of scrollTargets) target.removeEventListener("scroll", handleScroll);
   clearFindHighlights();

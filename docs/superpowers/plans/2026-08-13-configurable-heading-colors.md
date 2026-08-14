@@ -105,21 +105,21 @@ from pathlib import Path
 
 DEFAULT_HEADING_COLORS = {
     "dark": {
-        "h1": "#FCA5A5",
-        "h2": "#FDBA74",
-        "h3": "#FDE68A",
-        "h4": "#86EFAC",
-        "h5": "#93C5FD",
-        "h6": "#C4B5FD",
+      "h1": "#93C5FD",
+      "h2": "#C4B5FD",
+      "h3": "#86EFAC",
+      "h4": "#FDE68A",
+      "h5": "#FDBA74",
+      "h6": "#FCA5A5"
     },
     "light": {
-        "h1": "#B91C1C",
-        "h2": "#C2410C",
-        "h3": "#A16207",
-        "h4": "#15803D",
-        "h5": "#1D4ED8",
-        "h6": "#6D28D9",
-    },
+      "h1": "#1D4ED8",
+      "h2": "#6D28D9",
+      "h3": "#15803D",
+      "h4": "#A16207",
+      "h5": "#E94C0E",
+      "h6": "#C20C0C"
+    }
 }
 
 

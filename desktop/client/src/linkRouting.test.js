@@ -35,4 +35,48 @@ describe("classifyLink", () => {
     expect(preventDefault).toHaveBeenCalledOnce();
     expect(routed[0]).toEqual({ kind: "markdown", href: "parts/setup.md", path: "C:/Notes/guide.md" });
   });
+
+  it("routes a rendered-link click when the event target has no closest method", () => {
+    const preventDefault = vi.fn();
+    const anchor = { tagName: "A", getAttribute: () => "C:%5CNotes%5Cnext.md" };
+    const event = {
+      target: {},
+      composedPath: () => [{}, anchor],
+      preventDefault,
+    };
+    const routed = [];
+
+    expect(routeLinkClick(event, "C:/Notes/current.md", (route) => routed.push(route))).toBe(true);
+    expect(preventDefault).toHaveBeenCalledOnce();
+    expect(routed[0]).toEqual({
+      kind: "markdown",
+      href: "C:\\Notes\\next.md",
+      path: "C:/Notes/current.md",
+    });
+  });
+
+  it("routes a destination preserved after the HTML sanitizer removes href", () => {
+    const anchor = {
+      tagName: "A",
+      getAttribute: (name) => name === "data-flatnotes-href" ? "C:%5CNotes%5Cnext.md" : null,
+    };
+    const event = {
+      target: { closest: () => null },
+      composedPath: () => [anchor],
+      preventDefault: vi.fn(),
+    };
+    const routed = [];
+
+    expect(routeLinkClick(event, "C:/Notes/current.md", (route) => routed.push(route))).toBe(true);
+    expect(routed[0]).toMatchObject({ kind: "markdown", href: "C:\\Notes\\next.md" });
+  });
+
+  it("provides a sanitizer-safe attribute for the original destination", async () => {
+    const routing = await import("./linkRouting.js");
+
+    expect(routing.linkDestinationAttributes).toBeTypeOf("function");
+    expect(routing.linkDestinationAttributes("C:%5CNotes%5Cnext.md")).toEqual({
+      "data-flatnotes-href": "C:%5CNotes%5Cnext.md",
+    });
+  });
 });

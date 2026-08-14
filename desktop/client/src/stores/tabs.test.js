@@ -37,6 +37,19 @@ describe("tabs", () => {
     expect(tabs.byId(second).content).toBe("two");
   });
 
+  it("activates an already-open file instead of creating a duplicate tab", () => {
+    const tabs = createTabs();
+    const existing = tabs.open({ path: "C:\\Notes\\target.md", content: "original" });
+    tabs.open({ path: "c:/notes/other.md", content: "other" });
+
+    const opened = tabs.open({ path: "c:/notes/target.md", content: "new disk content" });
+
+    expect(opened).toBe(existing);
+    expect(tabs.active.value.id).toBe(existing);
+    expect(tabs.items).toHaveLength(2);
+    expect(tabs.byId(existing).content).toBe("original");
+  });
+
   it("stores each tab's editor scroll position", () => {
     const tabs = createTabs();
     const id = tabs.open({ title: "note", content: "one" });

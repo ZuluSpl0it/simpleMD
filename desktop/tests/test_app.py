@@ -216,6 +216,51 @@ def test_startup_trace_path_contains_timestamp_and_process_id(tmp_path: Path):
     assert path == tmp_path / "startup-logs" / "20260812T140506.123456Z-4321.log"
 
 
+def test_prune_startup_logs_keeps_current_and_four_newest_previous_logs(tmp_path):
+    from flatnotes_desktop.startup import prune_startup_logs
+
+    log_dir = tmp_path / "startup-logs"
+    log_dir.mkdir()
+    logs = []
+    for index in range(7):
+        path = log_dir / f"startup-20260812T14050{index}.000000Z-1.log"
+        path.write_text(str(index), encoding="utf-8")
+        logs.append(path)
+    current = log_dir / "startup-20260813T140500.000000Z-99.log"
+    current.write_text("current", encoding="utf-8")
+
+    prune_startup_logs(log_dir, current, keep=5)
+
+    assert len(list(log_dir.glob("*.log"))) == 5
+    assert current.exists()
+    assert logs[-1].exists()
+    assert not logs[0].exists()
+
+
+def test_prune_startup_logs_ignores_delete_failures(tmp_path, monkeypatch):
+    from flatnotes_desktop.startup import prune_startup_logs
+
+    log_dir = tmp_path / "startup-logs"
+    log_dir.mkdir()
+    current = log_dir / "startup-20260813T140500.000000Z-99.log"
+    old = log_dir / "startup-20260812T140500.000000Z-1.log"
+    current.write_text("current", encoding="utf-8")
+    old.write_text("old", encoding="utf-8")
+    original_unlink = Path.unlink
+
+    def fail_old(path, *args, **kwargs):
+        if path == old:
+            raise OSError("locked")
+        return original_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "unlink", fail_old)
+
+    prune_startup_logs(log_dir, current, keep=1)
+
+    assert current.exists()
+    assert old.exists()
+
+
 def test_request_and_response_events_include_url_and_status():
     from flatnotes_desktop.startup import trace_request, trace_response
 

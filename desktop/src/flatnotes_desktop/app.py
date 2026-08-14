@@ -9,7 +9,7 @@ from webview.dom import DOMEventHandler
 from .bridge import DesktopBridge
 from .files import FileService
 from .settings import SettingsStore
-from .startup import StartupTrace, startup_trace_path, trace_request, trace_response
+from .startup import StartupTrace, prune_startup_logs, startup_trace_path, trace_request, trace_response
 
 
 def make_drop_handler(window):
@@ -97,7 +97,9 @@ def run() -> None:
     if not getattr(sys, "frozen", False):
         executable_root = Path(__file__).parents[2]
     data_directory = executable_root / "data"
-    trace = StartupTrace(startup_trace_path(data_directory))
+    trace_path = startup_trace_path(data_directory)
+    trace = StartupTrace(trace_path)
+    prune_startup_logs(trace_path.parent, trace_path)
     trace("run-entered")
     bridge = DesktopBridge(
         None,

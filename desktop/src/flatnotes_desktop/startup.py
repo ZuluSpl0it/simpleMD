@@ -17,6 +17,28 @@ def startup_trace_path(
     return data_directory / "startup-logs" / f"{stamp}-{pid}.log"
 
 
+def prune_startup_logs(log_directory: Path, current_path: Path, keep: int = 5) -> None:
+    try:
+        candidates = sorted(
+            (path for path in log_directory.glob("*.log") if path.is_file()),
+            key=lambda path: path.name,
+            reverse=True,
+        )
+        retained = {current_path}
+        for path in candidates:
+            if len(retained) >= max(1, keep):
+                break
+            retained.add(path)
+        for path in candidates:
+            if path not in retained:
+                try:
+                    path.unlink()
+                except OSError:
+                    pass
+    except OSError:
+        pass
+
+
 def trace_request(trace, request) -> None:
     trace(f"request:{request.method}:{request.url}")
 

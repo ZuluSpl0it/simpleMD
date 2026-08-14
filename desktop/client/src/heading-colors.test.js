@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
 import {
   applyHeadingColors,
@@ -51,4 +53,20 @@ describe("heading colors", () => {
     );
     expect(root.values["--flatnotes-h2-color"]).toBe("#112233");
   });
+});
+
+it("loads palettes at startup and reapplies them on theme changes", () => {
+  const app = readFileSync(
+    fileURLToPath(new URL("./App.vue", import.meta.url)),
+    "utf8",
+  );
+  const api = readFileSync(
+    fileURLToPath(new URL("./api/desktop.js", import.meta.url)),
+    "utf8",
+  );
+
+  expect(api).toMatch(/getHeadingColors.*get_heading_colors/);
+  expect(app).toMatch(/getHeadingColors/);
+  expect(app).toMatch(/headingColors\.value\s*=\s*await getHeadingColors\(\)\.catch/);
+  expect(app.match(/applyHeadingColors\(/g)).toHaveLength(2);
 });

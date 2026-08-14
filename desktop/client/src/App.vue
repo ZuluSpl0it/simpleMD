@@ -11,7 +11,7 @@
 import { onMounted, onUnmounted, ref } from "vue";
 import HomeView from "./views/HomeView.vue";
 import FindBar from "./components/FindBar.vue";
-import { checkFile, createWorkspaceNote, deleteWorkspaceNote, getFontSettings, getIndexStatus, getTheme, getWorkspace, openDroppedPath, openMarkdown as chooseMarkdown, rebuildIndex, renameWorkspaceNote, saveAs, saveTab, selectWorkspace as chooseWorkspace, setTheme, startupEvent } from "./api/desktop.js";
+import { checkFile, createWorkspaceNote, deleteWorkspaceNote, getFontSettings, getHeadingColors, getIndexStatus, getTheme, getWorkspace, openDroppedPath, openMarkdown as chooseMarkdown, rebuildIndex, renameWorkspaceNote, saveAs, saveTab, selectWorkspace as chooseWorkspace, setTheme, startupEvent } from "./api/desktop.js";
 import TabBar from "./components/TabBar.vue";
 import MarkdownEditor from "./components/MarkdownEditor.vue";
 import ConflictDialog from "./components/ConflictDialog.vue";
@@ -19,6 +19,10 @@ import CloseDialog from "./components/CloseDialog.vue";
 import { createTabs } from "./stores/tabs.js";
 import { classifyDocument } from "./documents.js";
 import { replaceAllMatches, replaceMatch } from "./find.js";
+import {
+  applyHeadingColors,
+  DEFAULT_HEADING_COLORS,
+} from "./headingColors.js";
 
 const workspace = ref(null);
 const tabs = createTabs();
@@ -30,6 +34,7 @@ const replacementQuery = ref("");
 const findIndex = ref(0);
 const findCount = ref(0);
 const theme = ref("dark");
+const headingColors = ref(DEFAULT_HEADING_COLORS);
 const indexBusy = ref(false);
 const indexMessage = ref("");
 const indexError = ref(false);
@@ -96,6 +101,11 @@ function handleShortcut(event) {
 async function toggleTheme() {
   theme.value = await setTheme(theme.value === "dark" ? "light" : "dark");
   document.documentElement.dataset.theme = theme.value;
+  applyHeadingColors(
+    document.documentElement,
+    headingColors.value,
+    theme.value,
+  );
 }
 async function openMarkdown() {
   const document = await chooseMarkdown();
@@ -268,6 +278,14 @@ onMounted(async () => {
   await startupEvent("frontend-mounted");
   theme.value = await getTheme();
   document.documentElement.dataset.theme = theme.value;
+  headingColors.value = await getHeadingColors().catch(
+    () => DEFAULT_HEADING_COLORS,
+  );
+  applyHeadingColors(
+    document.documentElement,
+    headingColors.value,
+    theme.value,
+  );
   const fontSettings = await getFontSettings().catch(() => ({ font_size: 17, code_font_size: 13 }));
   document.documentElement.style.setProperty("--flatnotes-font-size", `${fontSettings.font_size}px`);
   document.documentElement.style.setProperty("--flatnotes-code-font-size", `${fontSettings.code_font_size}px`);

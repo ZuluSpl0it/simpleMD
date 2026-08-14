@@ -21,3 +21,4 @@ export const startupEvent = (event) => call("startup_event", event);
 export const getTheme = () => call("get_theme");
 export const setTheme = (theme) => call("set_theme", theme);
 export const getFontSettings = () => call("get_font_settings");
+export const getHeadingColors = () => call("get_heading_colors");

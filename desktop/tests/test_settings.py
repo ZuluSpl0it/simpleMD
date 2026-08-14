@@ -21,39 +21,71 @@ def test_settings_persist_theme_and_default_to_dark(tmp_path):
 
 
 def test_settings_default_font_sizes(tmp_path):
+    from flatnotes_desktop.models import default_font_sizes
     from flatnotes_desktop.settings import SettingsStore
 
-    settings = SettingsStore(tmp_path / "data").load()
-
-    assert settings.font_size == 17
-    assert settings.code_font_size == 13
+    assert SettingsStore(tmp_path / "data").load().font_size == default_font_sizes()
 
 
-def test_settings_load_valid_font_sizes_and_reject_invalid_values(tmp_path):
+def test_settings_validates_font_size_entries_independently(tmp_path):
+    from flatnotes_desktop.models import default_font_sizes
     from flatnotes_desktop.settings import SettingsStore
 
     store = SettingsStore(tmp_path / "data")
     store.data_directory.mkdir(parents=True)
     store.path.write_text(
-        '{"font_size": 20, "code_font_size": 15}', encoding="utf-8"
+        '{"font_size":{"text":18,"code":"large",'
+        '"heading_multiplier":{"h1":2.5,"h2":0,"h3":"large"}}}',
+        encoding="utf-8",
     )
 
-    settings = store.load()
+    defaults = default_font_sizes()
+    sizes = store.load().font_size
 
-    assert settings.font_size == 20
-    assert settings.code_font_size == 15
+    assert sizes["text"] == 18
+    assert sizes["code"] == defaults["code"]
+    assert sizes["heading_multiplier"]["h1"] == 2.5
+    assert sizes["heading_multiplier"]["h2"] == defaults["heading_multiplier"]["h2"]
+    assert sizes["heading_multiplier"]["h3"] == defaults["heading_multiplier"]["h3"]
 
-    assert store.save_theme("light").font_size == 20
-    assert store.save_workspace(r"D:\\Notes").code_font_size == 15
 
+def test_legacy_font_sizes_are_preserved_and_migrated_on_save(tmp_path):
+    from flatnotes_desktop.settings import SettingsStore
+
+    store = SettingsStore(tmp_path / "data")
+    store.data_directory.mkdir(parents=True)
     store.path.write_text(
-        '{"font_size": 2, "code_font_size": "large"}', encoding="utf-8"
+        '{"font_size":17,"code_font_size":13}', encoding="utf-8"
     )
 
-    settings = store.load()
+    sizes = store.load().font_size
+    assert sizes == {
+        "text": 17,
+        "code": 13,
+        "heading_multiplier": {
+            "h1": 2.0,
+            "h2": 1.7059,
+            "h3": 1.4706,
+            "h4": 1.2353,
+            "h5": 1.0588,
+            "h6": 0.9412,
+        },
+    }
 
-    assert settings.font_size == 17
-    assert settings.code_font_size == 13
+    store.save_theme("light")
+    saved = json.loads(store.path.read_text(encoding="utf-8"))
+    assert saved["font_size"] == sizes
+    assert "code_font_size" not in saved
+
+
+def test_legacy_font_size_34_is_preserved_as_text_size(tmp_path):
+    from flatnotes_desktop.settings import SettingsStore
+
+    store = SettingsStore(tmp_path / "data")
+    store.data_directory.mkdir(parents=True)
+    store.path.write_text('{"font_size":34}', encoding="utf-8")
+
+    assert store.load().font_size["text"] == 34
 
 
 def test_settings_default_heading_colors(tmp_path):

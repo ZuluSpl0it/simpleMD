@@ -1,18 +1,25 @@
 import json
+import math
 import os
 import re
 from pathlib import Path
 
-from .models import Settings, default_heading_colors
+from .models import Settings, default_font_sizes, default_heading_colors
 
 
 class SettingsStore:
     _serializable = False
-    DEFAULT_FONT_SIZE = 17
-    DEFAULT_CODE_FONT_SIZE = 13
-    FONT_SIZE_RANGE = range(12, 33)
-    CODE_FONT_SIZE_RANGE = range(10, 25)
+    PIXEL_SIZE_RANGE = range(8, 73)
+    HEADING_MULTIPLIER_RANGE = (0.5, 4.0)
     HEADING_LEVELS = tuple(f"h{level}" for level in range(1, 7))
+    LEGACY_HEADING_MULTIPLIERS = {
+        "h1": 2.0,
+        "h2": 1.7059,
+        "h3": 1.4706,
+        "h4": 1.2353,
+        "h5": 1.0588,
+        "h6": 0.9412,
+    }
 
     def __init__(self, data_directory: Path):
         self.data_directory = data_directory
@@ -26,13 +33,8 @@ class SettingsStore:
         return Settings(
             workspace=payload.get("workspace"),
             theme=theme if theme in {"dark", "light"} else "dark",
-            font_size=self._font_size(
-                payload.get("font_size"), self.DEFAULT_FONT_SIZE, self.FONT_SIZE_RANGE
-            ),
-            code_font_size=self._font_size(
-                payload.get("code_font_size"),
-                self.DEFAULT_CODE_FONT_SIZE,
-                self.CODE_FONT_SIZE_RANGE,
+            font_size=self._font_sizes(
+                payload.get("font_size"), payload.get("code_font_size")
             ),
             heading_colors=self._heading_colors(payload.get("heading_colors")),
         )
@@ -43,7 +45,6 @@ class SettingsStore:
             workspace=workspace,
             theme=current.theme,
             font_size=current.font_size,
-            code_font_size=current.code_font_size,
             heading_colors=current.heading_colors,
         )
 
@@ -55,15 +56,57 @@ class SettingsStore:
             workspace=current.workspace,
             theme=theme,
             font_size=current.font_size,
-            code_font_size=current.code_font_size,
             heading_colors=current.heading_colors,
         )
 
-    @staticmethod
-    def _font_size(value, default: int, allowed: range) -> int:
-        if isinstance(value, int) and not isinstance(value, bool) and value in allowed:
+    @classmethod
+    def _pixel_size(cls, value, default: int) -> int:
+        if (
+            isinstance(value, int)
+            and not isinstance(value, bool)
+            and value in cls.PIXEL_SIZE_RANGE
+        ):
             return value
         return default
+
+    @classmethod
+    def _multiplier(cls, value, default: float) -> float:
+        if (
+            isinstance(value, (int, float))
+            and not isinstance(value, bool)
+            and math.isfinite(value)
+            and cls.HEADING_MULTIPLIER_RANGE[0]
+            <= value
+            <= cls.HEADING_MULTIPLIER_RANGE[1]
+        ):
+            return float(value)
+        return default
+
+    @classmethod
+    def _font_sizes(cls, value, legacy_code_size) -> dict[str, int | dict[str, float]]:
+        defaults = default_font_sizes()
+        if isinstance(value, int) and not isinstance(value, bool):
+            if value not in cls.PIXEL_SIZE_RANGE:
+                return defaults
+            return {
+                "text": value,
+                "code": cls._pixel_size(legacy_code_size, 13),
+                "heading_multiplier": dict(cls.LEGACY_HEADING_MULTIPLIERS),
+            }
+        if not isinstance(value, dict):
+            return defaults
+        multipliers = value.get("heading_multiplier")
+        return {
+            "text": cls._pixel_size(value.get("text"), defaults["text"]),
+            "code": cls._pixel_size(value.get("code"), defaults["code"]),
+            "heading_multiplier": {
+                heading: cls._multiplier(
+                    multipliers.get(heading) if isinstance(multipliers, dict) else None,
+                    defaults["heading_multiplier"][heading],
+                )
+                for heading in cls.HEADING_LEVELS
+            },
+        }
 
     @classmethod
     def _heading_colors(cls, value) -> dict[str, dict[str, str]]:
@@ -87,8 +130,7 @@ class SettingsStore:
         *,
         workspace: str | None,
         theme: str,
-        font_size: int,
-        code_font_size: int,
+        font_size: dict[str, int | dict[str, float]],
         heading_colors: dict[str, dict[str, str]],
     ) -> Settings:
         self.data_directory.mkdir(parents=True, exist_ok=True)
@@ -99,7 +141,6 @@ class SettingsStore:
                     "workspace": workspace,
                     "theme": theme,
                     "font_size": font_size,
-                    "code_font_size": code_font_size,
                     "heading_colors": heading_colors,
                 },
                 indent=2,
@@ -111,8 +152,11 @@ class SettingsStore:
         return Settings(
             workspace=workspace,
             theme=theme,
-            font_size=font_size,
-            code_font_size=code_font_size,
+            font_size={
+                "text": font_size["text"],
+                "code": font_size["code"],
+                "heading_multiplier": dict(font_size["heading_multiplier"]),
+            },
             heading_colors={
                 theme: dict(palette) for theme, palette in heading_colors.items()
             },

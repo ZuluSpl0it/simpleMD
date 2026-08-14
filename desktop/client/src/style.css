@@ -5,12 +5,24 @@
   color-scheme: dark;
   --flatnotes-font-size: 17px;
   --flatnotes-code-font-size: 13px;
+  --flatnotes-h1-color: #FCA5A5;
+  --flatnotes-h2-color: #FDBA74;
+  --flatnotes-h3-color: #FDE68A;
+  --flatnotes-h4-color: #86EFAC;
+  --flatnotes-h5-color: #93C5FD;
+  --flatnotes-h6-color: #C4B5FD;
 }
 
 :root[data-theme="light"] {
   color: #292524;
   background: #fafaf9;
   color-scheme: light;
+  --flatnotes-h1-color: #B91C1C;
+  --flatnotes-h2-color: #C2410C;
+  --flatnotes-h3-color: #A16207;
+  --flatnotes-h4-color: #15803D;
+  --flatnotes-h5-color: #1D4ED8;
+  --flatnotes-h6-color: #6D28D9;
 }
 
 * { box-sizing: border-box; }
@@ -100,12 +112,36 @@ button:not(.toastui-editor-toolbar-icons):disabled { cursor: default; opacity: .
 .editor.viewing .toastui-editor-contents { padding: 18px 24px; font-size: var(--flatnotes-font-size); }
 .editor.viewing .toastui-editor-contents p,
 .editor.viewing .toastui-editor-contents li { font-size: var(--flatnotes-font-size); }
-.editor.viewing .toastui-editor-contents h1 { font-size: calc(var(--flatnotes-font-size) * 2); line-height: 1.2; }
-.editor.viewing .toastui-editor-contents h2 { font-size: calc(var(--flatnotes-font-size) * 1.7059); line-height: 1.25; }
-.editor.viewing .toastui-editor-contents h3 { font-size: calc(var(--flatnotes-font-size) * 1.4706); line-height: 1.3; }
-.editor.viewing .toastui-editor-contents h4 { font-size: calc(var(--flatnotes-font-size) * 1.2353); line-height: 1.35; }
-.editor.viewing .toastui-editor-contents h5 { font-size: calc(var(--flatnotes-font-size) * 1.0588); line-height: 1.4; }
-.editor.viewing .toastui-editor-contents h6 { font-size: calc(var(--flatnotes-font-size) * .9412); line-height: 1.45; }
+.editor.viewing .toastui-editor-contents h1 {
+  color: var(--flatnotes-h1-color);
+  font-size: calc(var(--flatnotes-font-size) * 2);
+  line-height: 1.2;
+}
+.editor.viewing .toastui-editor-contents h2 {
+  color: var(--flatnotes-h2-color);
+  font-size: calc(var(--flatnotes-font-size) * 1.7059);
+  line-height: 1.25;
+}
+.editor.viewing .toastui-editor-contents h3 {
+  color: var(--flatnotes-h3-color);
+  font-size: calc(var(--flatnotes-font-size) * 1.4706);
+  line-height: 1.3;
+}
+.editor.viewing .toastui-editor-contents h4 {
+  color: var(--flatnotes-h4-color);
+  font-size: calc(var(--flatnotes-font-size) * 1.2353);
+  line-height: 1.35;
+}
+.editor.viewing .toastui-editor-contents h5 {
+  color: var(--flatnotes-h5-color);
+  font-size: calc(var(--flatnotes-font-size) * 1.0588);
+  line-height: 1.4;
+}
+.editor.viewing .toastui-editor-contents h6 {
+  color: var(--flatnotes-h6-color);
+  font-size: calc(var(--flatnotes-font-size) * .9412);
+  line-height: 1.45;
+}
 .editor.viewing .toastui-editor-contents pre,
 .editor.viewing .toastui-editor-contents pre code { font-size: var(--flatnotes-code-font-size); line-height: 1.5; }
 .editor.viewing .toastui-editor-contents,
@@ -134,12 +170,36 @@ button:not(.toastui-editor-toolbar-icons):disabled { cursor: default; opacity: .
 .editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents { font-size: var(--flatnotes-font-size); }
 .editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents p,
 .editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents li { font-size: var(--flatnotes-font-size); }
-.editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents h1 { font-size: calc(var(--flatnotes-font-size) * 2); line-height: 1.2; }
-.editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents h2 { font-size: calc(var(--flatnotes-font-size) * 1.7059); line-height: 1.25; }
-.editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents h3 { font-size: calc(var(--flatnotes-font-size) * 1.4706); line-height: 1.3; }
-.editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents h4 { font-size: calc(var(--flatnotes-font-size) * 1.2353); line-height: 1.35; }
-.editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents h5 { font-size: calc(var(--flatnotes-font-size) * 1.0588); line-height: 1.4; }
-.editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents h6 { font-size: calc(var(--flatnotes-font-size) * .9412); line-height: 1.45; }
+.editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents h1 {
+  color: var(--flatnotes-h1-color);
+  font-size: calc(var(--flatnotes-font-size) * 2);
+  line-height: 1.2;
+}
+.editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents h2 {
+  color: var(--flatnotes-h2-color);
+  font-size: calc(var(--flatnotes-font-size) * 1.7059);
+  line-height: 1.25;
+}
+.editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents h3 {
+  color: var(--flatnotes-h3-color);
+  font-size: calc(var(--flatnotes-font-size) * 1.4706);
+  line-height: 1.3;
+}
+.editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents h4 {
+  color: var(--flatnotes-h4-color);
+  font-size: calc(var(--flatnotes-font-size) * 1.2353);
+  line-height: 1.35;
+}
+.editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents h5 {
+  color: var(--flatnotes-h5-color);
+  font-size: calc(var(--flatnotes-font-size) * 1.0588);
+  line-height: 1.4;
+}
+.editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents h6 {
+  color: var(--flatnotes-h6-color);
+  font-size: calc(var(--flatnotes-font-size) * .9412);
+  line-height: 1.45;
+}
 .editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents pre,
 .editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents pre code { font-size: var(--flatnotes-code-font-size); line-height: 1.5; }
 .editor-shell.editing .editor .toastui-editor-ww-container .toastui-editor-contents > p.flatnotes-softbreak,

@@ -78,3 +78,19 @@ it("matches WYSIWYG heading line spacing to the reader", () => {
   expect(css).toMatch(/\.toastui-editor-ww-container\s+\.toastui-editor-contents\s+h5\s*\{[^}]*line-height:\s*1\.4/);
   expect(css).toMatch(/\.toastui-editor-ww-container\s+\.toastui-editor-contents\s+h6\s*\{[^}]*line-height:\s*1\.45/);
 });
+
+it("colors headings only in reader and WYSIWYG views", () => {
+  const css = readFileSync(stylePath, "utf8");
+
+  for (let level = 1; level <= 6; level += 1) {
+    expect(css).toMatch(new RegExp(
+      `\\.editor\\.viewing\\s+\\.toastui-editor-contents\\s+h${level}\\s*\\{[^}]*color:\\s*var\\(--flatnotes-h${level}-color\\)`,
+    ));
+    expect(css).toMatch(new RegExp(
+      `\\.toastui-editor-ww-container\\s+\\.toastui-editor-contents\\s+h${level}\\s*\\{[^}]*color:\\s*var\\(--flatnotes-h${level}-color\\)`,
+    ));
+  }
+
+  expect(css).not.toMatch(/markdown-only[^}]*--flatnotes-h[1-6]-color/);
+  expect(css).not.toMatch(/border[^;}]*var\(--flatnotes-h[1-6]-color\)/);
+});

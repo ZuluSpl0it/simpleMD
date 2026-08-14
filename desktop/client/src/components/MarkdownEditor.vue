@@ -10,6 +10,7 @@ import "@toast-ui/editor/dist/toastui-editor.css";
 import "@toast-ui/editor/dist/theme/toastui-editor-dark.css";
 import { clearFindHighlights, highlightMatches } from "../find.js";
 import { linkDestinationAttributes, routeLinkClick } from "../linkRouting.js";
+import { isShortcut } from "../shortcuts.js";
 import { configureWysiwygSoftBreaks } from "../softBreaks.js";
 import { createScrollPositionListener, preserveModeScroll, readScrollPosition, restoreScrollPosition } from "../editorScroll.js";
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
@@ -41,6 +42,12 @@ const handleScroll = createScrollPositionListener(emitScrollPosition);
 function handleLinkClick(event) {
   routeLinkClick(event, props.path, (route) => emit("link-click", route));
 }
+function handleEditorKeydown(event) {
+  if (!props.editing || !isShortcut(event, "KeyY")) return;
+  event.preventDefault();
+  event.stopPropagation();
+  editor?.exec("redo");
+}
 function bindScrollListeners() {
   for (const target of scrollTargets) target.removeEventListener("scroll", handleScroll);
   const targets = props.editing
@@ -55,6 +62,7 @@ function restoreInitialScroll() {
 onMounted(() => {
   // Capture links before Toast UI or ProseMirror can consume the click.
   container.value.addEventListener("click", handleLinkClick, true);
+  container.value.addEventListener("keydown", handleEditorKeydown, true);
   const options = {
     el: container.value,
     height: "100%",
@@ -94,6 +102,7 @@ watch(() => props.content, (value) => { if (editor && editor.getMarkdown && edit
 watch(() => [props.findQuery, props.findIndex, props.content, props.editing, props.theme], refreshHighlights);
 onBeforeUnmount(() => {
   container.value?.removeEventListener("click", handleLinkClick, true);
+  container.value?.removeEventListener("keydown", handleEditorKeydown, true);
   emitScrollPosition();
   for (const target of scrollTargets) target.removeEventListener("scroll", handleScroll);
   clearFindHighlights();

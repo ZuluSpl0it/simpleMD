@@ -55,11 +55,19 @@ def test_bridge_reads_font_settings(tmp_path):
     store = SettingsStore(tmp_path / "data")
     store.data_directory.mkdir(parents=True)
     store.path.write_text(
-        '{"font_size": 21, "code_font_size": 14}', encoding="utf-8"
+        '{"font_size":{"text":16,"code":11,'
+        '"heading_multiplier":{"h1":2.5}}}',
+        encoding="utf-8",
     )
-    bridge = DesktopBridge(None, FileService(), settings=store)
 
-    assert bridge.get_font_settings() == {"font_size": 21, "code_font_size": 14}
+    settings = DesktopBridge(None, FileService(), settings=store).get_font_settings()
+
+    assert settings["text"] == 16
+    assert settings["code"] == 11
+    assert settings["heading_multiplier"]["h1"] == 2.5
+    assert set(settings["heading_multiplier"]) == {
+        f"h{level}" for level in range(1, 7)
+    }
 
 
 def test_bridge_state_objects_are_not_recursively_exposed(tmp_path):

@@ -2,7 +2,7 @@ from pathlib import Path
 from threading import Lock, RLock, Thread
 
 from .files import FileService
-from .models import default_heading_colors
+from .models import default_font_sizes, default_heading_colors
 from .settings import SettingsStore
 from .workspace import WorkspaceService
 from .watcher import Fingerprint, changed_since
@@ -28,11 +28,15 @@ class DesktopBridge:
     def get_theme(self) -> str:
         return self.settings.load().theme if self.settings is not None else "dark"
 
-    def get_font_settings(self) -> dict[str, int]:
+    def get_font_settings(self) -> dict[str, int | dict[str, float]]:
         if self.settings is None:
-            return {"font_size": 17, "code_font_size": 13}
-        settings = self.settings.load()
-        return {"font_size": settings.font_size, "code_font_size": settings.code_font_size}
+            return default_font_sizes()
+        font_size = self.settings.load().font_size
+        return {
+            "text": font_size["text"],
+            "code": font_size["code"],
+            "heading_multiplier": dict(font_size["heading_multiplier"]),
+        }
 
     def get_heading_colors(self) -> dict[str, dict[str, str]]:
         if self.settings is None:

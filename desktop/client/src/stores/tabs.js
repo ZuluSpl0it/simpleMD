@@ -6,6 +6,8 @@ export function createTabs() {
   const byId = (id) => items.find((item) => item.id === id);
   function open(document) {
     const id = `${Date.now()}-${items.length}`;
+    const mode = document.mode || "markdown";
+    const editing = document.editing ?? false;
     items.push({
       id,
       kind: document.kind || "workspace",
@@ -17,9 +19,10 @@ export function createTabs() {
       fingerprint: document.content_hash || null,
       modified_ns: document.modified_ns || 0,
       content_hash: document.content_hash || null,
-      mode: document.mode || "markdown",
-      editing: document.editing ?? false,
+      mode,
+      editing,
       editorRevision: 0,
+      scrollPosition: { view: editing ? mode : "viewing", top: 0, ratio: 0 },
     });
     activeId.value = id;
     return id;
@@ -29,6 +32,18 @@ export function createTabs() {
     if (!tab) return;
     tab.content = content;
     tab.dirty = tab.content !== tab.savedContent;
+  }
+  function setScrollPosition(id, position) {
+    const tab = byId(id);
+    if (!tab) return;
+    const view = ["viewing", "markdown", "wysiwyg"].includes(position?.view) ? position.view : "viewing";
+    const top = Number(position?.top);
+    const ratio = Number(position?.ratio);
+    tab.scrollPosition = {
+      view,
+      top: Number.isFinite(top) ? Math.max(0, top) : 0,
+      ratio: Number.isFinite(ratio) ? Math.min(1, Math.max(0, ratio)) : 0,
+    };
   }
   function replace(id, document) {
     const tab = byId(id);
@@ -58,5 +73,5 @@ export function createTabs() {
     activeId.value = items.at(-1)?.id || null;
     return { requiresConflict: false };
   }
-  return { items, activeId, byId, open, select, setContent, replace, showHome, requestClose, active: computed(() => byId(activeId.value)) };
+  return { items, activeId, byId, open, select, setContent, setScrollPosition, replace, showHome, requestClose, active: computed(() => byId(activeId.value)) };
 }

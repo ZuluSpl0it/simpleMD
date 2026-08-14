@@ -47,6 +47,21 @@ def test_bridge_reads_and_changes_theme(tmp_path):
     assert bridge.get_theme() == "light"
 
 
+def test_bridge_reads_font_settings(tmp_path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+    from flatnotes_desktop.settings import SettingsStore
+
+    store = SettingsStore(tmp_path / "data")
+    store.data_directory.mkdir(parents=True)
+    store.path.write_text(
+        '{"font_size": 21, "code_font_size": 14}', encoding="utf-8"
+    )
+    bridge = DesktopBridge(None, FileService(), settings=store)
+
+    assert bridge.get_font_settings() == {"font_size": 21, "code_font_size": 14}
+
+
 def test_bridge_state_objects_are_not_recursively_exposed(tmp_path):
     from flatnotes_desktop.bridge import DesktopBridge
     from flatnotes_desktop.files import FileService

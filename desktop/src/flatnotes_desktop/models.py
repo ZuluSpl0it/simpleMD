@@ -6,6 +6,8 @@ from pathlib import Path
 class Settings:
     workspace: str | None = None
     theme: str = "dark"
+    font_size: int = 17
+    code_font_size: int = 13
 
 
 @dataclass(frozen=True)

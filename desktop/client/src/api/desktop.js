@@ -20,3 +20,4 @@ export const deleteWorkspaceNote = (title) => call("delete_workspace_note", titl
 export const startupEvent = (event) => call("startup_event", event);
 export const getTheme = () => call("get_theme");
 export const setTheme = (theme) => call("set_theme", theme);
+export const getFontSettings = () => call("get_font_settings");

@@ -27,6 +27,12 @@ class DesktopBridge:
     def get_theme(self) -> str:
         return self.settings.load().theme if self.settings is not None else "dark"
 
+    def get_font_settings(self) -> dict[str, int]:
+        if self.settings is None:
+            return {"font_size": 17, "code_font_size": 13}
+        settings = self.settings.load()
+        return {"font_size": settings.font_size, "code_font_size": settings.code_font_size}
+
     def set_theme(self, theme: str) -> str:
         if self.settings is None:
             return "dark"

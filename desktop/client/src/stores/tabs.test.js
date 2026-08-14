@@ -37,6 +37,16 @@ describe("tabs", () => {
     expect(tabs.byId(second).content).toBe("two");
   });
 
+  it("stores each tab's editor scroll position", () => {
+    const tabs = createTabs();
+    const id = tabs.open({ title: "note", content: "one" });
+    const position = { view: "viewing", top: 312, ratio: 0.4 };
+
+    tabs.setScrollPosition(id, position);
+
+    expect(tabs.byId(id).scrollPosition).toEqual(position);
+  });
+
   it("replaces a tab from disk and bumps its editor revision", () => {
     const tabs = createTabs();
     const id = tabs.open({ path: "C:/note.md", content: "old", editing: true });

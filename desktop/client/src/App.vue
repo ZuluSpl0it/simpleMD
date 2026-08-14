@@ -2,7 +2,7 @@
   <TabBar :tabs="tabs" :active="tabs.active.value" :theme="theme" @new-tab="newTab" @home="goHome" @toggle-theme="toggleTheme" @close-tab="closeTab" @toggle-edit="toggleEdit" @save="saveActive" @save-as="saveActiveAs" @rename="renameActive" @delete="deleteActive" />
   <FindBar v-if="findOpen && tabs.active.value" :query="findQuery" :replacement="replacementQuery" :editing="tabs.active.value.editing" :match-count="findCount" :active-match="findIndex" @update:query="setFindQuery" @update:replacement="replacementQuery = $event" @previous="moveFind(-1)" @next="moveFind(1)" @replace="replaceActive" @replace-all="replaceAllActive" @close="closeFind" />
   <HomeView v-if="!tabs.active.value" :workspace="workspace" :index-busy="indexBusy" :index-message="indexMessage" :index-error="indexError" @select-workspace="selectWorkspace" @rebuild-index="rebuildSearchIndex" @open-markdown="openMarkdown" @open-result="openResult" />
-  <MarkdownEditor v-else :key="`${tabs.active.value.id}-${tabs.active.value.mode}-${tabs.active.value.editing}-${tabs.active.value.editorRevision}-${theme}`" :content="tabs.active.value.content" :mode="tabs.active.value.mode" :editing="tabs.active.value.editing" :theme="theme" :find-query="findQuery" :find-index="findIndex" :initial-scroll-position="tabs.active.value.scrollPosition" :scroll-key="tabs.active.value.id" @change="(content) => tabs.setContent(tabs.activeId.value, content)" @find-count="setFindCount" @scroll-position="(id, position) => tabs.setScrollPosition(id, position)" />
+  <MarkdownEditor v-else :key="`${tabs.active.value.id}-${tabs.active.value.mode}-${tabs.active.value.editing}-${tabs.active.value.editorRevision}-${theme}`" :content="tabs.active.value.content" :mode="tabs.active.value.mode" :editing="tabs.active.value.editing" :theme="theme" :find-query="findQuery" :find-index="findIndex" :initial-scroll-position="tabs.active.value.scrollPosition" :scroll-key="tabs.active.value.id" :path="tabs.active.value.path" @change="(content) => tabs.setContent(tabs.activeId.value, content)" @find-count="setFindCount" @scroll-position="(id, position) => tabs.setScrollPosition(id, position)" @link-click="handleEditorLink" />
   <ConflictDialog v-if="conflictTab" :visible="true" :tab="conflictTab" @resolve="resolveConflict" />
   <CloseDialog v-if="pendingCloseTab" :tab="pendingCloseTab" @resolve="resolveClose" />
 </template>
@@ -11,7 +11,7 @@
 import { onMounted, onUnmounted, ref } from "vue";
 import HomeView from "./views/HomeView.vue";
 import FindBar from "./components/FindBar.vue";
-import { checkFile, createWorkspaceNote, deleteWorkspaceNote, getFontSettings, getHeadingColors, getIndexStatus, getTheme, getWorkspace, openDroppedPath, openMarkdown as chooseMarkdown, rebuildIndex, renameWorkspaceNote, saveAs, saveTab, selectWorkspace as chooseWorkspace, setTheme, startupEvent } from "./api/desktop.js";
+import { checkFile, createWorkspaceNote, deleteWorkspaceNote, getFontSettings, getHeadingColors, getIndexStatus, getTheme, getWorkspace, openDroppedPath, openExternalLink, openMarkdown as chooseMarkdown, openMarkdownLink, rebuildIndex, renameWorkspaceNote, saveAs, saveTab, selectWorkspace as chooseWorkspace, setTheme, startupEvent } from "./api/desktop.js";
 import TabBar from "./components/TabBar.vue";
 import MarkdownEditor from "./components/MarkdownEditor.vue";
 import ConflictDialog from "./components/ConflictDialog.vue";
@@ -111,6 +111,19 @@ async function toggleTheme() {
 async function openMarkdown() {
   const document = await chooseMarkdown();
   if (document) tabs.open(classifyDocument(document, workspace.value));
+}
+async function handleEditorLink({ kind, href, path }) {
+  try {
+    if (kind === "browser") {
+      await openExternalLink(href);
+      return;
+    }
+    const result = await openMarkdownLink(path, href);
+    if (result?.error) throw new Error(result.error);
+    if (result?.content !== undefined) tabs.open(classifyDocument(result, workspace.value));
+  } catch (error) {
+    window.alert("Could not open link: " + error.message);
+  }
 }
 async function openResult(result) {
   const document = await openDroppedPath(result.path);

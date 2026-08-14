@@ -13,6 +13,8 @@ export const saveTab = (tab) => call("save_tab", tab);
 export const saveAs = (tab) => call("save_as", tab);
 export const checkFile = (tab) => call("check_file", tab);
 export const openDroppedPath = (path) => call("open_dropped_path", path);
+export const openExternalLink = (url) => call("open_external_link", url);
+export const openMarkdownLink = (currentPath, href) => call("open_markdown_link", currentPath, href);
 export const getWorkspace = () => call("get_workspace");
 export const createWorkspaceNote = (title, content) => call("create_workspace_note", title, content);
 export const renameWorkspaceNote = (title, newTitle) => call("rename_workspace_note", title, newTitle);

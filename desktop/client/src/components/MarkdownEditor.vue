@@ -9,12 +9,13 @@ import Editor from "@toast-ui/editor";
 import "@toast-ui/editor/dist/toastui-editor.css";
 import "@toast-ui/editor/dist/theme/toastui-editor-dark.css";
 import { clearFindHighlights, highlightMatches } from "../find.js";
+import { routeLinkClick } from "../linkRouting.js";
 import { configureWysiwygSoftBreaks } from "../softBreaks.js";
 import { createScrollPositionListener, preserveModeScroll, readScrollPosition, restoreScrollPosition } from "../editorScroll.js";
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
-const props = defineProps({ content: { type: String, default: "" }, mode: { type: String, default: "markdown" }, editing: { type: Boolean, default: false }, theme: { type: String, default: "dark" }, findQuery: { type: String, default: "" }, findIndex: { type: Number, default: 0 }, initialScrollPosition: { type: Object, default: () => ({ view: "viewing", top: 0, ratio: 0 }) }, scrollKey: { type: String, default: "" } });
-const emit = defineEmits(["change", "find-count", "scroll-position"]);
+const props = defineProps({ content: { type: String, default: "" }, mode: { type: String, default: "markdown" }, editing: { type: Boolean, default: false }, theme: { type: String, default: "dark" }, findQuery: { type: String, default: "" }, findIndex: { type: Number, default: 0 }, initialScrollPosition: { type: Object, default: () => ({ view: "viewing", top: 0, ratio: 0 }) }, scrollKey: { type: String, default: "" }, path: { type: String, default: "" } });
+const emit = defineEmits(["change", "find-count", "scroll-position", "link-click"]);
 const container = ref();
 let editor;
 let scrollTargets = [];
@@ -37,6 +38,9 @@ function emitScrollPosition(value) {
   emit("scroll-position", props.scrollKey, position);
 }
 const handleScroll = createScrollPositionListener(emitScrollPosition);
+function handleLinkClick(event) {
+  routeLinkClick(event, props.path, (route) => emit("link-click", route));
+}
 function bindScrollListeners() {
   for (const target of scrollTargets) target.removeEventListener("scroll", handleScroll);
   const targets = props.editing
@@ -49,6 +53,7 @@ function restoreInitialScroll() {
   restoreScrollPosition(container.value, props.editing ? props.mode : "viewing", props.initialScrollPosition);
 }
 onMounted(() => {
+  container.value.addEventListener("click", handleLinkClick);
   const options = {
     el: container.value,
     height: "100%",
@@ -81,6 +86,7 @@ onMounted(() => {
 watch(() => props.content, (value) => { if (editor && editor.getMarkdown && editor.getMarkdown() !== value) editor.setMarkdown(value); });
 watch(() => [props.findQuery, props.findIndex, props.content, props.editing, props.theme], refreshHighlights);
 onBeforeUnmount(() => {
+  container.value?.removeEventListener("click", handleLinkClick);
   emitScrollPosition();
   for (const target of scrollTargets) target.removeEventListener("scroll", handleScroll);
   clearFindHighlights();

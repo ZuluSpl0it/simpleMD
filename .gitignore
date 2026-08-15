@@ -251,5 +251,6 @@ dist
 
 # Custom
 .vscode/
+graphify-out/
 data/
 /notes/

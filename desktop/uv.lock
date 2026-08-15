@@ -58,7 +58,7 @@ wheels = [
 ]
 
 [[package]]
-name = "flatnotes-desktop"
+name = "simplemd-desktop"
 version = "0.1.0"
 source = { virtual = "." }
 dependencies = [

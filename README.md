@@ -1,123 +1,81 @@
-<p align="center">
-  <img src="docs/logo.svg" width="300px"></img>
-</p>
-<p align="center">
-  <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/dullage/flatnotes?style=for-the-badge">
-</p>
+# simpleMD
 
-A self-hosted, database-less note-taking web app that utilises a flat folder of markdown files for storage.
+simpleMD is a portable Markdown workspace and desktop editor. It stores notes
+as ordinary `.md` files, provides full-text search, and supports Markdown,
+WYSIWYG, and rendered reading views.
 
-Log into the [demo site](https://demo.flatnotes.io) and take a look around. *Note: This site resets every 15 minutes.*
-
-## Contents
-
-* [Design Principle](#design-principle)
-* [Features](#features)
-* [Getting Started](#getting-started)
-  * [Hosted](#hosted)
-  * [Self Hosted](#self-hosted)
-* [Roadmap](#roadmap)
-* [Contributing](#contributing)
-* [Sponsorship](#sponsorship)
-* [Thanks](#thanks)
-
-## Design Principle
-
-flatnotes is designed to be a distraction-free note-taking app that puts your note content first. This means:
-
-* A clean and simple user interface.
-* No folders, notebooks or anything like that. Just all of your notes, backed by powerful search and tagging functionality.
-* Quick access to a full-text search from anywhere in the app (keyboard shortcut "/").
-
-Another key design principle is not to take your notes hostage. Your notes are just markdown files. There's no database, proprietary formatting, complicated folder structures or anything like that. You're free at any point to just move the files elsewhere and use another app.
-
-Equally, the only thing flatnotes caches is the search index and that's incrementally synced on every search (and when flatnotes first starts). This means that you're free to add, edit & delete the markdown files outside of flatnotes even whilst flatnotes is running.
+The Windows desktop app is built with Python, pywebview, and WebView2. A
+workspace can be moved or selected without importing the files into a database,
+so your notes remain portable and usable by other Markdown tools.
 
 ## Features
 
-* Mobile responsive web interface.
-* Raw/WYSIWYG markdown editor modes.
-* Advanced search functionality.
-* Note "tagging" functionality.
-* Customisable home page.
-* Wikilink support to easily link to other notes (`[[My Other Note]]`).
-* Light/dark themes.
-* Multiple authentication options (none, read-only, username/password, 2FA).
-* Restful API.
+- Portable Windows desktop build (`simpleMD.exe`).
+- Markdown, WYSIWYG, and read-only rendering modes.
+- Full-text search across the selected workspace.
+- Multiple open document tabs.
+- Light and dark themes.
+- Drag-and-drop opening of one or more Markdown files.
+- External links open in the system browser; local Markdown links open as tabs.
+- Configurable heading colors and font sizes through `data/settings.json`.
+- Search indexing that can be rebuilt after files are moved or added externally.
 
-See [the wiki](https://github.com/dullage/flatnotes/wiki) for more details.
+## Windows portable app
 
-## Getting Started
+The packaged app is self-contained. Keep the following items together:
 
-### Hosted
-
-A quick and easy way to get started with flatnotes is to host it on PikaPods. Just click the button below and follow the instructions.
-
-[![PikaPods](https://www.pikapods.com/static/run-button-34.svg)](https://www.pikapods.com/pods?run=flatnotes)
-
-
-### Self Hosted
-
-If you'd prefer to host flatnotes yourself then the recommendation is to use Docker.
-
-### Example Docker Run Command
-
-```shell
-docker run -d \
-  -e "PUID=1000" \
-  -e "PGID=1000" \
-  -e "FLATNOTES_AUTH_TYPE=password" \
-  -e "FLATNOTES_USERNAME=user" \
-  -e 'FLATNOTES_PASSWORD=changeMe!' \
-  -e "FLATNOTES_SECRET_KEY=aLongRandomSeriesOfCharacters" \
-  -v "$(pwd)/data:/data" \
-  -p "8080:8080" \
-  dullage/flatnotes:latest
+```text
+simpleMD/
+├── simpleMD.exe
+├── _internal/
+├── data/
+└── workspace/
 ```
 
-### Example Docker Compose
-```yaml
-version: "3"
+The `workspace` directory is the default note location. You can choose a
+different workspace from the home screen. Settings and startup diagnostics are
+stored under `data/`.
 
-services:
-  flatnotes:
-    container_name: flatnotes
-    image: dullage/flatnotes:latest
-    environment:
-      PUID: 1000
-      PGID: 1000
-      FLATNOTES_AUTH_TYPE: "password"
-      FLATNOTES_USERNAME: "user"
-      FLATNOTES_PASSWORD: "changeMe!"
-      FLATNOTES_SECRET_KEY: "aLongRandomSeriesOfCharacters"
-    volumes:
-      - "./data:/data"
-      # Optional. Allows you to save the search index in a different location: 
-      # - "./index:/data/.flatnotes"
-    ports:
-      - "8080:8080"
-    restart: unless-stopped
+To build the Windows package from a Windows checkout:
+
+```powershell
+cd desktop
+./scripts/build_windows.ps1
 ```
 
-See the [Environment Variables](https://github.com/dullage/flatnotes/wiki/Environment-Variables) article in the wiki for a full list of configuration options.
+The build script writes the portable package to the configured `dist`
+directory and stages the frontend before invoking PyInstaller.
 
-## Roadmap
+## Development
 
-I want to keep flatnotes as simple and distraction-free as possible which means limiting new features. This said, I welcome feedback and suggestions.
+The web client and Python desktop shell live under `client/` and `desktop/`.
+The Python services and search implementation are under `server/` and
+`desktop/src/flatnotes_desktop/`.
 
-## Contributing
+Install the project dependencies with the package managers used by the
+repository, then run the relevant test suites:
 
-If you're interested in contributing to flatnotes, then please read the [CONTRIBUTING.md](CONTRIBUTING.md) file.
+```bash
+npm --prefix desktop/client test
+uv run --directory desktop pytest -q
+```
 
-## Sponsorship
+See [CONTRIBUTING.md](CONTRIBUTING.md) for development expectations.
 
-If you find this project useful, please consider buying me a beer. It would genuinely make my day.
+## Relationship to Flatnotes
 
-[![Sponsor](https://img.shields.io/static/v1?label=Sponsor&message=%E2%9D%A4&logo=GitHub&color=%23fe8e86)](https://github.com/sponsors/Dullage)
+simpleMD is an independent application based on the work of
+[Flatnotes](https://github.com/dullage/flatnotes), an MIT-licensed open-source
+Markdown note-taking project by Adam Dullage. The original project provided
+the web application foundation; this repository adds the simpleMD branding,
+Windows desktop shell, portable packaging, startup diagnostics, and related
+desktop-focused improvements.
 
-## Thanks
+The original MIT license and copyright notice are preserved in
+[LICENSE](LICENSE). Compatibility-oriented names such as the existing
+`FLATNOTES_*` environment variables and internal Python package paths are
+intentionally retained for now.
 
-A special thanks to 2 fantastic open-source projects that make flatnotes possible.
+## License
 
-* [Whoosh](https://whoosh.readthedocs.io/en/latest/intro.html) - A fast, pure Python search engine library.
-* [TOAST UI Editor](https://ui.toast.com/tui-editor) - A GFM Markdown and WYSIWYG editor for the browser.
+simpleMD is distributed under the MIT License. See [LICENSE](LICENSE).

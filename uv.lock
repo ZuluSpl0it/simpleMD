@@ -189,7 +189,7 @@ wheels = [
 ]
 
 [[package]]
-name = "flatnotes"
+name = "simplemd"
 version = "5.5.4"
 source = { virtual = "." }
 dependencies = [

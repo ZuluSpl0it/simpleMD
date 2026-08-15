@@ -1,8 +1,11 @@
 # Python + pywebview + WebView2 Startup Troubleshooting Guide
 
-This guide records the startup investigation performed for Flatnotes and turns
-the findings into reusable guidance for future Python desktop applications
-that embed a web frontend with pywebview and Microsoft WebView2.
+This guide records the startup investigation performed for simpleMD and turns
+the findings into reusable guidance for future Python desktop applications.
+simpleMD is based on the open-source Flatnotes project, with the investigation
+focused on its Windows desktop shell and packaging changes. The guidance
+applies to future Python desktop applications that embed a web frontend with
+pywebview and Microsoft WebView2.
 
 ## Short version
 
@@ -25,9 +28,9 @@ pythonnet 3.1.0, PyInstaller 6.22.0, and the system WebView2 Runtime. Record
 these versions in future reports because renderer, Python, and pythonnet
 changes can affect startup behavior.
 
-## What caused the Flatnotes hang
+## What caused the simpleMD hang
 
-The primary cause was pywebview bridge reflection. Flatnotes passed a
+The primary cause was pywebview bridge reflection. simpleMD passed a
 `DesktopBridge` instance to `js_api`. The bridge contained `FileService`,
 `SettingsStore`, `WorkspaceService`, a `Path`-based data directory, and the
 pywebview window. pywebview 6.2.1 walked that object graph while generating the
@@ -164,7 +167,7 @@ a custom ready-bound server and a Python 3.12 runtime change were not added.
 ### Local files may still involve a local HTTP server
 
 Passing a plain filesystem path to `webview.create_window` causes pywebview to
-serve local assets through its Bottle server. In the Flatnotes version,
+serve local assets through its Bottle server. In the simpleMD version,
 `http_server=True` is explicit. pywebview starts that server asynchronously,
 so do not infer socket readiness merely from the server thread being created.
 
@@ -247,7 +250,7 @@ Recommended sequence:
 9. Start indexing, watchers, and other expensive work after readiness, ideally
    on a daemon/background thread or timer.
 
-The Flatnotes code delays the first index rebuild by two seconds. This keeps
+The simpleMD code delays the first index rebuild by two seconds. This keeps
 Whoosh work away from WebView2 initialization, but the `loaded` handler must
 still be guarded if only one rebuild is desired because it runs for each page
 navigation.
@@ -303,7 +306,7 @@ When a new project starts slowly:
 8. Retest the selected fix after a reboot.
 9. Keep the profile CSVs and representative traces with the release notes.
 
-## Files from the Flatnotes investigation
+## Files from the simpleMD investigation
 
 - Startup instrumentation: `desktop/src/flatnotes_desktop/startup.py`
 - WebView lifecycle and profiling hooks: `desktop/src/flatnotes_desktop/app.py`

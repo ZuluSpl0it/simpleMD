@@ -12,7 +12,7 @@ try {
         $staged = Join-Path $stagingRoot "simpleMD"
 
         if ((Get-Process -Name "simpleMD" -ErrorAction SilentlyContinue) -or
-            (Get-Process -Name "Flatnotes" -ErrorAction SilentlyContinue)) {
+            (Get-Process -Name "simpleMD" -ErrorAction SilentlyContinue)) {
             throw "simpleMD is running. Close it before rebuilding so packaged DLLs are not locked."
         }
 

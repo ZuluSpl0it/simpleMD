@@ -77,3 +77,65 @@ def test_rebuild_index_refreshes_paths_after_an_external_move(tmp_path: Path):
 
     result = service.search("release")
     assert [item.path for item in result] == [moved]
+
+
+def test_search_matches_technical_identifier_parts_and_full_values(tmp_path: Path):
+    from flatnotes_desktop.workspace import WorkspaceService
+
+    root = tmp_path / "notes"
+    root.mkdir()
+    (root / "technical.md").write_text(
+        "update_acct_config cwLUNC-tax_zones terra1abc234def A1B2C3D4 --node",
+        encoding="utf-8",
+    )
+    service = WorkspaceService(root, tmp_path / "index")
+    service.rebuild()
+
+    for query in ["acct", "tax", "terra1abc234def", "A1B2C3D4", "node"]:
+        assert [item.title for item in service.search(query)] == ["technical"]
+
+
+def test_search_supports_accent_prefix_wildcard_fuzzy_and_phrase_queries(
+    tmp_path: Path,
+):
+    from flatnotes_desktop.workspace import WorkspaceService
+
+    root = tmp_path / "notes"
+    root.mkdir()
+    (root / "guide.md").write_text(
+        "Run terrad from the café during the bonding curve migration #chain",
+        encoding="utf-8",
+    )
+    service = WorkspaceService(root, tmp_path / "index")
+    service.rebuild()
+
+    assert [item.title for item in service.search("cafe")] == ["guide"]
+    assert [item.title for item in service.search("terra*")] == ["guide"]
+    assert [item.title for item in service.search("te?rad")] == ["guide"]
+    assert [item.title for item in service.search("terrd~")] == ["guide"]
+    assert [item.title for item in service.search('"bonding curve"')] == [
+        "guide"
+    ]
+    assert [item.title for item in service.search("tags:chain")] == ["guide"]
+    assert service.search("terr") == []
+
+
+def test_title_and_tag_matches_rank_above_content_only_matches(tmp_path: Path):
+    from flatnotes_desktop.workspace import WorkspaceService
+
+    root = tmp_path / "notes"
+    root.mkdir()
+    (root / "needle.md").write_text("other text", encoding="utf-8")
+    (root / "tag.md").write_text("#needle", encoding="utf-8")
+    (root / "content.md").write_text("needle", encoding="utf-8")
+    service = WorkspaceService(root, tmp_path / "index")
+    service.rebuild()
+
+    assert [item.title for item in service.search("needle")] == [
+        "tag",
+        "needle",
+        "content",
+    ]
+    assert [item.title for item in service.search("title:needle")] == [
+        "needle"
+    ]

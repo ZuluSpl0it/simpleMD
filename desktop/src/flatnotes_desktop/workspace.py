@@ -2,11 +2,11 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
-from whoosh.fields import ID, KEYWORD, TEXT, Schema
+from whoosh.fields import ID, TEXT, Schema
 from whoosh.index import create_in, open_dir
-from whoosh.qparser import MultifieldParser
 
 from .paths import workspace_note_path
+from .search import TECHNICAL_ANALYZER, build_query_parser
 
 
 @dataclass(frozen=True)
@@ -24,10 +24,14 @@ class WorkspaceService:
         self.root = root.resolve()
         self.index_directory = index_directory
         self.schema = Schema(
-            title=TEXT(stored=True),
+            title=TEXT(
+                stored=True,
+                analyzer=TECHNICAL_ANALYZER,
+                field_boost=2.0,
+            ),
             path=ID(stored=True, unique=True),
-            content=TEXT,
-            tags=KEYWORD(lowercase=True),
+            content=TEXT(analyzer=TECHNICAL_ANALYZER),
+            tags=TEXT(analyzer=TECHNICAL_ANALYZER, field_boost=2.0),
         )
 
     def rebuild(self) -> None:
@@ -54,7 +58,7 @@ class WorkspaceService:
 
     def search(self, term: str) -> list[SearchResult]:
         index = open_dir(self.index_directory)
-        parser = MultifieldParser(["title", "content", "tags"], index.schema)
+        parser = build_query_parser(index.schema)
         with index.searcher() as searcher:
             hits = searcher.search(parser.parse(term))
             return [SearchResult(hit["title"], Path(hit["path"])) for hit in hits]

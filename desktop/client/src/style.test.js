@@ -33,6 +33,16 @@ it("keeps the rebuild-index action visible on the home screen", () => {
   expect(css).toMatch(/\.home\s+\.rebuild-index-button\s*\{[^}]*display:\s*inline-block/);
 });
 
+it("keeps search help controls stable and themed", () => {
+  const css = readFileSync(stylePath, "utf8");
+
+  expect(css).toMatch(/\.search-help-button\s*\{[^}]*width:\s*40px[^}]*border-radius:\s*0/);
+  expect(css).toMatch(/\.search-help-button::after\s*\{[^}]*content:\s*attr\(data-tooltip\)/);
+  expect(css).toMatch(/\.search-help-button:hover::after,[\s\S]*\.search-help-button:focus-visible::after/);
+  expect(css).toMatch(/\.home\s+\.search-error\s*\{[^}]*color:\s*#f87171/);
+  expect(css).toMatch(/:root\[data-theme="light"\]\s+\.search-help-dialog\s*\{[^}]*background:\s*#ffffff[^}]*color:\s*#292524/);
+});
+
 it("uses configurable text, code, and heading multipliers", () => {
   const css = readFileSync(stylePath, "utf8");
 

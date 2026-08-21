@@ -9,7 +9,7 @@ from webview.dom import DOMEventHandler
 from .bridge import DesktopBridge
 from .files import FileService
 from .settings import SettingsStore
-from .startup import StartupTrace, prune_startup_logs, startup_trace_path, trace_request, trace_response
+from .startup import StartupTrace, launch_markdown_paths, prune_startup_logs, startup_trace_path, trace_request, trace_response
 
 
 def make_drop_handler(window):
@@ -91,7 +91,8 @@ def start_webview(window, callback, data_directory: Path) -> None:
     )
 
 
-def run() -> None:
+def run(arguments=None) -> None:
+    launch_paths = launch_markdown_paths(sys.argv[1:] if arguments is None else arguments)
     asset_root = Path(__file__).with_name("assets")
     executable_root = Path(sys.executable).parent
     if not getattr(sys, "frozen", False):
@@ -106,6 +107,7 @@ def run() -> None:
         FileService(),
         settings=SettingsStore(data_directory),
         trace=trace,
+        launch_paths=launch_paths,
     )
     bridge.restore_workspace()
     trace("workspace-restored")

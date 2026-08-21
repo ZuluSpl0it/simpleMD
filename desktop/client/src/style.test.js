@@ -19,6 +19,13 @@ it("does not let app button backgrounds erase the Toast UI icon sprite", () => {
   expect(css).toMatch(/:root\[data-theme="light"\]\s+button:not\(\.toastui-editor-toolbar-icons\)/);
 });
 
+it("renders the line break toolbar control with its own return icon", () => {
+  const css = readFileSync(stylePath, "utf8");
+
+  expect(css).toMatch(/\.toastui-editor-toolbar-icons\.line-break\s*\{[^}]*background-image:\s*none/);
+  expect(css).toMatch(/\.toastui-editor-toolbar-icons\.line-break::before\s*\{[^}]*content:\s*"↵"/);
+});
+
 it("uses light surfaces for dialogs and conflict popups", () => {
   const css = readFileSync(stylePath, "utf8");
 

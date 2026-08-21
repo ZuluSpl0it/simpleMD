@@ -17,6 +17,20 @@ def test_webview_uses_private_profile(tmp_path: Path, monkeypatch):
     assert "storage_path" not in captured["kwargs"]
 
 
+def test_launch_markdown_paths_filters_arguments_and_preserves_order(tmp_path: Path):
+    from flatnotes_desktop.startup import launch_markdown_paths
+
+    first = tmp_path / "first.md"
+    second = tmp_path / "second.MD"
+    ignored = tmp_path / "ignored.txt"
+    for path in (first, second, ignored):
+        path.write_text("content", encoding="utf-8")
+
+    result = launch_markdown_paths([str(first), str(ignored), str(tmp_path / "missing.md"), str(second)])
+
+    assert result == [str(first), str(second)]
+
+
 def test_bind_drop_handlers_registers_once_with_default_prevention(monkeypatch):
     from flatnotes_desktop import app
 

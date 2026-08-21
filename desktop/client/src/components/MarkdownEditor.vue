@@ -11,7 +11,13 @@ import "@toast-ui/editor/dist/theme/toastui-editor-dark.css";
 import { clearFindHighlights, highlightMatches } from "../find.js";
 import { linkDestinationAttributes, routeLinkClick } from "../linkRouting.js";
 import { isShortcut } from "../shortcuts.js";
-import { configureWysiwygSoftBreaks } from "../softBreaks.js";
+import {
+  configureWysiwygSoftBreaks,
+  decodeEditorLineBreaks,
+  insertWysiwygLineBreak,
+  lineBreakMarker,
+  markdownForWysiwyg,
+} from "../softBreaks.js";
 import { createScrollPositionListener, preserveModeScroll, readScrollPosition, restoreScrollPosition } from "../editorScroll.js";
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 
@@ -48,6 +54,24 @@ function handleEditorKeydown(event) {
   event.stopPropagation();
   editor?.exec("redo");
 }
+function handleModeSwitchClick(event) {
+  if (!props.editing || !editor?.isMarkdownMode?.()) return;
+  const tab = event.target.closest?.(".toastui-editor-mode-switch .tab-item");
+  if (tab?.textContent.trim() !== "WYSIWYG") return;
+  const markdown = editor.getMarkdown();
+  const encoded = markdownForWysiwyg(editor, markdown);
+  if (encoded !== markdown) editor.setMarkdown(encoded, false);
+}
+function normalizedEditorMarkdown() {
+  return decodeEditorLineBreaks(editor.getMarkdown());
+}
+function setEditorMarkdown(markdown) {
+  const value = editor.isWysiwygMode?.() ? markdownForWysiwyg(editor, markdown) : markdown;
+  editor.setMarkdown(value, false);
+}
+function emitEditorChange() {
+  emit("change", normalizedEditorMarkdown());
+}
 function bindScrollListeners() {
   for (const target of scrollTargets) target.removeEventListener("scroll", handleScroll);
   const targets = props.editing
@@ -62,12 +86,27 @@ function restoreInitialScroll() {
 onMounted(() => {
   // Capture links before Toast UI or ProseMirror can consume the click.
   container.value.addEventListener("click", handleLinkClick, true);
+  container.value.addEventListener("click", handleModeSwitchClick, true);
   container.value.addEventListener("keydown", handleEditorKeydown, true);
   const options = {
     el: container.value,
     height: "100%",
     theme: props.theme,
     initialValue: props.editing ? "" : props.content,
+    toolbarItems: [
+      ["heading", "bold", "italic", "strike"],
+      ["hr", "quote", { name: "lineBreak", className: "line-break toastui-editor-toolbar-icons", tooltip: "Line Break", command: "insertLineBreak" }],
+      ["ul", "ol", "task", "indent", "outdent"],
+      ["table", "image", "link"],
+      ["code", "codeblock"],
+      ["scrollSync"],
+    ],
+    widgetRules: [
+      {
+        rule: new RegExp(lineBreakMarker),
+        toDOM: () => document.createElement("br"),
+      },
+    ],
     customHTMLRenderer: {
       link: (node, { entering, origin }) => {
         const rendered = origin();
@@ -83,14 +122,25 @@ onMounted(() => {
     ? new Editor({ ...options, initialEditType: props.mode, previewStyle: "tab" })
     : Editor.factory({ ...options, viewer: true });
   if (props.editing) {
+    editor.addCommand("markdown", "insertLineBreak", () => {
+      editor.insertText("<br>");
+      return true;
+    });
+    editor.addCommand("wysiwyg", "insertLineBreak", insertWysiwygLineBreak);
     configureWysiwygSoftBreaks(editor);
-    editor.setMarkdown(props.content, false);
+    setEditorMarkdown(props.content);
     editor.on("changeMode", (mode) => {
       preserveModeScroll(container.value, mode, lastScrollPosition, undefined, (position) => emitScrollPosition(position));
       emit("mode-change", mode);
+      if (mode === "markdown") {
+        const markdown = editor.getMarkdown();
+        const decoded = decodeEditorLineBreaks(markdown);
+        if (decoded !== markdown) editor.setMarkdown(decoded, false);
+      }
+      emitEditorChange();
       bindScrollListeners();
     });
-    editor.on("change", () => emit("change", editor.getMarkdown()));
+    editor.on("change", emitEditorChange);
   }
   nextTick(() => {
     bindScrollListeners();
@@ -98,10 +148,13 @@ onMounted(() => {
   });
   refreshHighlights();
 });
-watch(() => props.content, (value) => { if (editor && editor.getMarkdown && editor.getMarkdown() !== value) editor.setMarkdown(value); });
+watch(() => props.content, (value) => {
+  if (editor?.getMarkdown && normalizedEditorMarkdown() !== value) setEditorMarkdown(value);
+});
 watch(() => [props.findQuery, props.findIndex, props.content, props.editing, props.theme], refreshHighlights);
 onBeforeUnmount(() => {
   container.value?.removeEventListener("click", handleLinkClick, true);
+  container.value?.removeEventListener("click", handleModeSwitchClick, true);
   container.value?.removeEventListener("keydown", handleEditorKeydown, true);
   emitScrollPosition();
   for (const target of scrollTargets) target.removeEventListener("scroll", handleScroll);

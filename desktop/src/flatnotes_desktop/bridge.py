@@ -18,13 +18,14 @@ def _is_windows_absolute_path(value: str) -> bool:
 
 
 class DesktopBridge:
-    def __init__(self, window, file_service: FileService, settings=None, workspace=None, trace=None, thread_factory=None):
+    def __init__(self, window, file_service: FileService, settings=None, workspace=None, trace=None, thread_factory=None, launch_paths=None):
         self.window = window
         self.file_service = file_service
         self.settings = settings
         self.workspace = workspace
         self.trace = trace or (lambda _event: None)
         self._thread_factory = thread_factory or Thread
+        self._launch_paths = list(launch_paths or [])
         self._index_state_lock = RLock()
         self._index_operation_lock = Lock()
         self._index_generation = 0
@@ -33,6 +34,10 @@ class DesktopBridge:
 
     def startup_event(self, event: str) -> None:
         self.trace(event)
+
+    def get_launch_paths(self) -> list[str]:
+        paths, self._launch_paths = self._launch_paths, []
+        return paths
 
     def get_theme(self) -> str:
         return self.settings.load().theme if self.settings is not None else "dark"
@@ -53,6 +58,10 @@ class DesktopBridge:
         colors = self.settings.load().heading_colors
         return {theme: dict(palette) for theme, palette in colors.items()}
 
+    def _workspace_dialog_directory(self) -> str | None:
+        root = getattr(self.workspace, "root", None)
+        return str(root) if root is not None else None
+
     def set_theme(self, theme: str) -> str:
         if self.settings is None:
             return "dark"
@@ -61,11 +70,14 @@ class DesktopBridge:
     def open_markdown(self) -> dict | None:
         import webview
 
-        result = self.window.create_file_dialog(
-            webview.OPEN_DIALOG,
-            allow_multiple=False,
-            file_types=("Markdown (*.md)",),
-        )
+        options = {
+            "allow_multiple": False,
+            "file_types": ("Markdown (*.md)",),
+        }
+        directory = self._workspace_dialog_directory()
+        if directory:
+            options["directory"] = directory
+        result = self.window.create_file_dialog(webview.OPEN_DIALOG, **options)
         if not result:
             return None
         return self._document_payload(self.file_service.open_external(result[0]))
@@ -120,11 +132,14 @@ class DesktopBridge:
     def save_as(self, tab: dict) -> dict | None:
         import webview
 
-        result = self.window.create_file_dialog(
-            webview.SAVE_DIALOG,
-            save_filename=Path(tab.get("path") or "Untitled.md").name,
-            file_types=("Markdown (*.md)",),
-        )
+        options = {
+            "save_filename": Path(tab.get("path") or "Untitled.md").name,
+            "file_types": ("Markdown (*.md)",),
+        }
+        directory = self._workspace_dialog_directory()
+        if directory:
+            options["directory"] = directory
+        result = self.window.create_file_dialog(webview.SAVE_DIALOG, **options)
         if not result:
             return None
         document = self.file_service.save_external(result[0], tab.get("content", ""))
@@ -139,7 +154,11 @@ class DesktopBridge:
     def select_workspace(self) -> dict | None:
         import webview
 
-        result = self.window.create_file_dialog(webview.FOLDER_DIALOG)
+        options = {}
+        directory = self._workspace_dialog_directory()
+        if directory:
+            options["directory"] = directory
+        result = self.window.create_file_dialog(webview.FOLDER_DIALOG, **options)
         if not result:
             return None
         root = Path(result[0]).resolve()

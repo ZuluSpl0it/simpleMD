@@ -10,8 +10,8 @@
       <template v-if="active">
         <button type="button" class="edit-toggle" :class="{ active: active.editing }" :aria-pressed="active.editing" @click="$emit('toggle-edit')">Edit</button>
         <template v-if="active.editing">
-          <button type="button" @click="$emit('save')">Save</button>
-          <button type="button" @click="$emit('save-as')">Save As</button>
+          <button type="button" :disabled="!active.dirty" @click="$emit('save')">Save</button>
+          <button type="button" :disabled="!active.dirty" @click="$emit('save-as')">Save As</button>
           <button v-if="active.kind === 'workspace' && active.path" type="button" @click="$emit('rename')">Rename</button>
           <button v-if="active.kind === 'workspace' && active.path" type="button" @click="$emit('delete')">Delete</button>
         </template>

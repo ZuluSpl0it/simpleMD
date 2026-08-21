@@ -3,6 +3,21 @@ import os
 from pathlib import Path
 from threading import Lock, current_thread
 from time import monotonic
+from typing import List
+
+
+def launch_markdown_paths(arguments: List[str]) -> List[str]:
+    """Return existing Markdown files supplied as process arguments."""
+    paths = []
+    seen = set()
+    for argument in arguments:
+        path = Path(argument)
+        key = str(path).casefold()
+        if key in seen or path.suffix.lower() != ".md" or not path.is_file():
+            continue
+        seen.add(key)
+        paths.append(str(path))
+    return paths
 
 
 def startup_trace_path(

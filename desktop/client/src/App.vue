@@ -12,7 +12,7 @@
 import { onMounted, onUnmounted, ref } from "vue";
 import HomeView from "./views/HomeView.vue";
 import FindBar from "./components/FindBar.vue";
-import { checkFile, createWorkspaceNote, deleteWorkspaceNote, getFontSettings, getHeadingColors, getIndexStatus, getTheme, getWorkspace, openDroppedPath, openExternalLink, openMarkdown as chooseMarkdown, openMarkdownLink, rebuildIndex, renameWorkspaceNote, saveAs, saveTab, selectWorkspace as chooseWorkspace, setTheme, startupEvent } from "./api/desktop.js";
+import { checkFile, createWorkspaceNote, deleteWorkspaceNote, getFontSettings, getHeadingColors, getIndexStatus, getLaunchPaths, getTheme, getWorkspace, openDroppedPath, openExternalLink, openMarkdown as chooseMarkdown, openMarkdownLink, rebuildIndex, renameWorkspaceNote, saveAs, saveTab, selectWorkspace as chooseWorkspace, setTheme, startupEvent } from "./api/desktop.js";
 import TabBar from "./components/TabBar.vue";
 import MarkdownEditor from "./components/MarkdownEditor.vue";
 import ConflictDialog from "./components/ConflictDialog.vue";
@@ -302,6 +302,17 @@ async function handleDrop(event) {
     tabs.open(classifyDocument(event.detail, workspace.value));
   }
 }
+async function openLaunchPaths() {
+  const paths = await getLaunchPaths();
+  for (const path of paths || []) {
+    try {
+      const document = await openDroppedPath(path);
+      if (document?.kind === "external") tabs.open(classifyDocument(document, workspace.value));
+    } catch (_error) {
+      // Ignore invalid launch files and keep startup usable.
+    }
+  }
+}
 onMounted(async () => {
   window.addEventListener("keydown", handleShortcut, true);
   await startupEvent("frontend-mounted");
@@ -320,6 +331,7 @@ onMounted(async () => {
   workspace.value = await getWorkspace();
   await pollIndexStatus();
   await startupEvent("frontend-workspace-read");
+  await openLaunchPaths();
   window.addEventListener("flatnotes-drop", handleDrop);
   pollTimer = window.setInterval(() => { pollActiveFile(); pollIndexStatus(); }, 1000);
 });

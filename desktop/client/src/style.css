@@ -117,6 +117,18 @@ button:not(.toastui-editor-toolbar-icons):disabled { cursor: default; opacity: .
 :root[data-theme="light"] .toastui-editor-toolbar-icons {
   background-position-y: 3px !important;
 }
+.toastui-editor-toolbar-icons.line-break {
+  background-image: none;
+  position: relative;
+}
+.toastui-editor-toolbar-icons.line-break::before {
+  content: "↵";
+  display: block;
+  color: #d6d3d1;
+  font-size: 20px;
+  line-height: 1;
+}
+:root[data-theme="light"] .toastui-editor-toolbar-icons.line-break::before { color: #57534e; }
 .editor-shell { height: calc(100vh - 44px); display: flex; flex-direction: column; overflow: hidden; }
 .editor-shell.editing { height: calc(100vh - 44px); }
 .editor { flex: 1; min-height: 0; overflow: hidden; }

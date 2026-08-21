@@ -20,6 +20,7 @@ export const createWorkspaceNote = (title, content) => call("create_workspace_no
 export const renameWorkspaceNote = (title, newTitle) => call("rename_workspace_note", title, newTitle);
 export const deleteWorkspaceNote = (title) => call("delete_workspace_note", title);
 export const startupEvent = (event) => call("startup_event", event);
+export const getLaunchPaths = () => call("get_launch_paths");
 export const getTheme = () => call("get_theme");
 export const setTheme = (theme) => call("set_theme", theme);
 export const getFontSettings = () => call("get_font_settings");

@@ -4,8 +4,10 @@ from pathlib import Path
 class FakeWindow:
     def __init__(self, result):
         self.result = result
+        self.dialog_calls = []
 
     def create_file_dialog(self, *_args, **_kwargs):
+        self.dialog_calls.append((_args, _kwargs))
         return self.result
 
 
@@ -33,6 +35,16 @@ def test_frontend_can_record_a_startup_event():
     bridge.startup_event("frontend-mounted")
 
     assert events == ["frontend-mounted"]
+
+
+def test_launch_paths_are_returned_once():
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+
+    bridge = DesktopBridge(None, FileService(), launch_paths=["one.md", "two.md"])
+
+    assert bridge.get_launch_paths() == ["one.md", "two.md"]
+    assert bridge.get_launch_paths() == []
 
 
 def test_bridge_reads_and_changes_theme(tmp_path):
@@ -109,6 +121,23 @@ def test_open_dialog_returns_external_document(tmp_path: Path):
     bridge = DesktopBridge(FakeWindow((str(path),)), FileService())
 
     assert bridge.open_markdown()["kind"] == "external"
+
+
+def test_open_markdown_dialog_starts_in_workspace(tmp_path: Path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+    from flatnotes_desktop.workspace import WorkspaceService
+
+    root = tmp_path / "workspace"
+    root.mkdir()
+    path = root / "outside.md"
+    path.write_text("body", encoding="utf-8")
+    window = FakeWindow((str(path),))
+    bridge = DesktopBridge(window, FileService(), workspace=WorkspaceService(root, tmp_path / "index"))
+
+    bridge.open_markdown()
+
+    assert window.dialog_calls[0][1]["directory"] == str(root.resolve())
 
 
 def test_open_external_link_uses_browser_adapter(monkeypatch):
@@ -199,6 +228,29 @@ def test_select_workspace_persists_folder(tmp_path: Path):
     result = bridge.select_workspace()
 
     assert result["workspace"] == str(workspace.resolve())
+
+
+def test_select_workspace_dialog_starts_in_current_workspace(tmp_path: Path):
+    from flatnotes_desktop.bridge import DesktopBridge
+    from flatnotes_desktop.files import FileService
+    from flatnotes_desktop.settings import SettingsStore
+    from flatnotes_desktop.workspace import WorkspaceService
+
+    current = tmp_path / "current"
+    selected = tmp_path / "selected"
+    current.mkdir()
+    selected.mkdir()
+    window = FakeWindow((str(selected),))
+    bridge = DesktopBridge(
+        window,
+        FileService(),
+        settings=SettingsStore(tmp_path / "data"),
+        workspace=WorkspaceService(current, tmp_path / "index"),
+    )
+
+    bridge.select_workspace()
+
+    assert window.dialog_calls[0][1]["directory"] == str(current.resolve())
 
 
 def test_select_workspace_returns_before_background_index_rebuild(tmp_path: Path):
